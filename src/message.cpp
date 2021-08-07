@@ -10,6 +10,6 @@ const uint8_t* Message::getMessagePacketBody() const {
     return packet_ + header_len;
 }
 
-uint16_t Message::getMsgPacketLen() const {
-    return length_;
+uint16_t Message::getMessagePacketBodyLen() const {
+    return body_len_;
 }

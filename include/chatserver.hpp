@@ -6,14 +6,15 @@
 #include <string>
 #include <memory>
 #include <boost/asio.hpp>
-#include "clientchatconnection.hpp"
+#include "chatconnection.hpp"
 #include "chatroom.hpp"
 
 using boost::asio::ip::tcp;
 
 class ChatServer : public std::enable_shared_from_this<ChatServer> {
     public:
-        ChatServer();
+        ChatServer(boost::asio::io_context& io_context,
+                   const tcp::endpoint& endpoint);
     private:
         void acceptConnections();
         void getCRNameHeader(tcp::socket& socket) const;
