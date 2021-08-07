@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(Boost REQUIRED COMPONENTS iostreams system thread)
-file(GLOB SOURCES "src/*.cpp")
+set(server_sources src/main.cpp src/message.cpp)
 
 include_directories(${Boost_INCLUDE_DIR} include)
-add_executable(server ${SOURCES})
+add_executable(server ${server_sources})
 target_link_libraries(server ${Boost_LIBRARIES})
