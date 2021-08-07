@@ -5,7 +5,7 @@ project(Chat_Service)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-find_package(Boost REQUIRED COMPONENTS iostreams)
+find_package(Boost REQUIRED COMPONENTS iostreams system thread)
 file(GLOB SOURCES "src/*.cpp")
 
 include_directories(${Boost_INCLUDE_DIR} include)
