@@ -14,8 +14,7 @@ void ChatConnection::readMsgHeader() {
         socket_,
         boost::asio::buffer(temp_msg_.getMessagePacket(), header_len),
         [this, self](boost::system::error_code ec, std::size_t) {
-            if (!ec && self->temp_msg_.parseHeader())
-                readMsgBody();
+            if (!ec && self->temp_msg_.parseHeader()) readMsgBody();
             else self->chatroom_.leave(shared_from_this());
         }
     );

@@ -13,7 +13,7 @@ void ChatServer::acceptConnections() {
         [this](boost::system::error_code ec, tcp::socket socket) {
             if (!ec) {
                 std::make_shared<ChatConnection>(
-                    std::move(socket), room_
+                    std::move(socket), chatroom_
                 )->init();
             }                
             acceptConnections();

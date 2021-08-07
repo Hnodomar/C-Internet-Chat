@@ -21,7 +21,7 @@ class ChatServer : public std::enable_shared_from_this<ChatServer> {
         void getCRNameBody(tcp::socket& socket, uint16_t len) const;
         bool chatRoomExists(std::string name) const;
         tcp::acceptor acceptor_;
-        std::set<ChatRoom> chatrooms_;
+        ChatRoom chatroom_;
 };
 
 #endif

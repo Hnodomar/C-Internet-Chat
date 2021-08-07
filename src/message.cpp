@@ -1,6 +1,6 @@
 #include "message.hpp"
 
-Message::Message() : length_(0) {}
+Message::Message() : body_len_(0) {}
 
 const uint8_t* Message::getMessagePacket() const {
     return packet_;

@@ -6,14 +6,17 @@
 
 #include "chatroom.hpp"
 #include "message.hpp"
+#include "chatuser.hpp"
 
 using boost::asio::ip::tcp;
 
-class ChatConnection : public std::enable_shared_from_this<ChatConnection> {
+class ChatConnection : 
+public std::enable_shared_from_this<ChatConnection>,
+public ChatUser {
     public:
         ChatConnection(tcp::socket socket, ChatRoom& chatroom);
         void init();
-        void deliverMessageToClient();
+        void deliverMessageToClient(const Message& msg) override;
     private:
         void readMsgHeader();
         void readMsgBody();
