@@ -1,36 +1,26 @@
 #ifndef CHAT_SERVER_HPP
 #define CHAT_SERVER_HPP
 
+#include <set>
+#include <algorithm>
+#include <string>
+#include <memory>
 #include <boost/asio.hpp>
-#include "chat.hpp"
+#include "clientchatconnection.hpp"
 #include "chatroom.hpp"
 
 using boost::asio::ip::tcp;
 
-class ChatServer {
+class ChatServer : public std::enable_shared_from_this<ChatServer> {
     public:
-        ChatServer(
-            boost::asio::io_context& io_context,
-            const tcp::endpoint& endpoint
-            ): acceptor_(io_context, endpoint)
-        {
-            acceptConnections();
-        }  
+        ChatServer();
     private:
-        void acceptConnections() {
-            acceptor_.async_accept(
-                [this](boost::system::error_code ec, tcp::socket socket) {
-                    if (!ec) {
-                        std::make_shared<ClientChatConnection>(
-                            std::move(socket), room_
-                        )->init();
-                    }                
-                    acceptConnections();
-                }
-            );
-        }
+        void acceptConnections();
+        void getCRNameHeader(tcp::socket& socket) const;
+        void getCRNameBody(tcp::socket& socket, uint16_t len) const;
+        bool chatRoomExists(std::string name) const;
         tcp::acceptor acceptor_;
-        ChatRoom room_;    
+        std::set<ChatRoom> chatrooms_;
 };
 
 #endif
