@@ -3,6 +3,7 @@
 
 #include <boost/asio.hpp>
 #include "chat.hpp"
+#include "chatroom.hpp"
 
 using boost::asio::ip::tcp;
 
@@ -19,14 +20,17 @@ class ChatServer {
         void acceptConnections() {
             acceptor_.async_accept(
                 [this](boost::system::error_code ec, tcp::socket socket) {
-                    if (!ec)
-                        std::make_shared<Chat>(std::move(socket), room_)->init();                
+                    if (!ec) {
+                        std::make_shared<ClientChatConnection>(
+                            std::move(socket), room_
+                        )->init();
+                    }                
                     acceptConnections();
                 }
             );
         }
         tcp::acceptor acceptor_;
-        Chat room_;    
+        ChatRoom room_;    
 };
 
 #endif
