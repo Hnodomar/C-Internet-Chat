@@ -24,10 +24,13 @@ void ChatConnection::readMsgBody() {
     auto self(shared_from_this());
     boost::asio::async_read(
         socket_,
-        boost::asio::buffer(temp_msg_.getMessagePacketBody(), temp_msg_.getMessagePacketBodyLen()),
+        boost::asio::buffer(
+            temp_msg_.getMessagePacketBody(), 
+            temp_msg_.getMessagePacketBodyLen()
+        ),
         [this, self](boost::system::error_code ec, std::size_t) {
             if (!ec) {
-                chatroom_.deliver(temp_msg_);
+                chatroom_.deliverMsgToUsers(temp_msg_);
                 readMsgHeader();
             }
             else {
@@ -35,4 +38,8 @@ void ChatConnection::readMsgBody() {
             }
         }
     );
+}
+
+void ChatConnection::deliverMessageToClient(const Message& msg) {
+    
 }

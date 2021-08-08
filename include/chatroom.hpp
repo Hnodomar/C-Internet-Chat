@@ -14,7 +14,7 @@ class ChatRoom {
     public:
         void join(chat_user_ptr user);
         void leave(chat_user_ptr user);
-        void deliver(const Message& msg);
+        void deliverMsgToUsers(const Message& msg);
     private:
         std::set<chat_user_ptr> users_;
         std::deque<Message> msg_queue_;
