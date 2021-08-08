@@ -16,8 +16,7 @@ void ChatConnection::readMsgHeader() {
         [this, self](boost::system::error_code ec, std::size_t) {
             if (!ec && temp_msg_.parseHeader())
                 readMsgBody();
-            else 
-                chatroom_.leave(shared_from_this());
+            else chatroom_.leave(shared_from_this());
         }
     );
 }
@@ -35,9 +34,7 @@ void ChatConnection::readMsgBody() {
                 chatroom_.deliverMsgToUsers(temp_msg_);
                 readMsgHeader();
             }
-            else {
-                chatroom_.leave(self);
-            }
+            else chatroom_.leave(self);
         }
     );
 }
@@ -45,8 +42,7 @@ void ChatConnection::readMsgBody() {
 void ChatConnection::deliverMsgToConnection(const Message& msg) {
     bool already_delivering = !msgs_to_send_client_.empty();
     msgs_to_send_client_.push_back(msg);
-    if (!already_delivering)
-        writeMsgToClient();
+    if (!already_delivering) writeMsgToClient();
 }
 
 void ChatConnection::writeMsgToClient() {
@@ -63,8 +59,7 @@ void ChatConnection::writeMsgToClient() {
                 if (!msgs_to_send_client_.empty())
                     writeMsgToClient();
             }
-            else 
-                chatroom_.leave(self);
+            else chatroom_.leave(self);
         }
     );
 }

@@ -2,6 +2,8 @@
 #define MESSAGE_HPP
 
 #include <cstdint>
+#include <cstring>
+#include <arpa/inet.h>
 
 constexpr uint16_t header_len = 2;
 constexpr uint16_t max_body_len = 512;
