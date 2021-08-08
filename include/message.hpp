@@ -1,10 +1,10 @@
 #ifndef MESSAGE_HPP
 #define MESSAGE_HPP
 
+#include <cstdint>
+
 constexpr uint16_t header_len = 2;
 constexpr uint16_t max_body_len = 512;
-
-#include <cstdint>
 
 class Message {
     public:

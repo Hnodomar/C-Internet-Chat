@@ -9,20 +9,22 @@
 #include "chatuser.hpp"
 
 using boost::asio::ip::tcp;
+class ChatConnection;
+typedef std::enable_shared_from_this<ChatConnection> SharedConnection;
 
-class ChatConnection : 
-public std::enable_shared_from_this<ChatConnection>,
-public ChatUser {
+class ChatConnection : public SharedConnection, public ChatUser {
     public:
         ChatConnection(tcp::socket socket, ChatRoom& chatroom);
         void init();
-        void deliverMessageToClient(const Message& msg) override;
+        void deliverMsgToConnection(const Message& msg) override;
     private:
         void readMsgHeader();
         void readMsgBody();
+        void writeMsgToClient();
         ChatRoom& chatroom_;
         tcp::socket socket_;
         Message temp_msg_;
+        std::deque<Message> msgs_to_send_client_;
 };
 
 #endif

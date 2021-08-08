@@ -15,5 +15,5 @@ void ChatRoom::deliverMsgToUsers(const Message& msg) {
     while (msg_queue_.size() > max_cache_msgs)
         msg_queue_.pop_front();
     for (auto user : users_)
-        user->deliver(msg);
+        user->deliverMessageToClient(msg);
 }

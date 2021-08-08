@@ -4,7 +4,7 @@ ChatConnection::ChatConnection(tcp::socket socket, ChatRoom& chatroom):
     socket_(std::move(socket)), chatroom_(chatroom) {}
 
 void ChatConnection::init() {
-    room_.join(shared_from_this());
+    chatroom_.join(shared_from_this());
     readMsgHeader();
 }
 
@@ -34,12 +34,35 @@ void ChatConnection::readMsgBody() {
                 readMsgHeader();
             }
             else {
-                chatroom_.leave(shared_from_this());
+                chatroom_.leave(self);
             }
         }
     );
 }
 
-void ChatConnection::deliverMessageToClient(const Message& msg) {
-    
+void ChatConnection::deliverMsgToConnection(const Message& msg) {
+    bool already_delivering = !msgs_to_send_client_.empty();
+    msgs_to_send_client_.push_back(msg);
+    if (!already_delivering)
+        writeMsgToClient();
+}
+
+void ChatConnection::writeMsgToClient() {
+    auto self(shared_from_this());
+    boost::asio::async_write(
+        socket_,
+        boost::asio::buffer(
+            msgs_to_send_client_.front().getMessagePacket(),
+            msgs_to_send_client_.front().getMsgPacketLen() 
+        ),
+        [self, this](boost::system::error_code ec, std::size_t) {
+            if (!ec) {
+                msgs_to_send_client_.pop_front();
+                if (!msgs_to_send_client_.empty())
+                    writeMsgToClient();
+            }
+            else 
+                chatroom_.leave(self);
+        }
+    );
 }
