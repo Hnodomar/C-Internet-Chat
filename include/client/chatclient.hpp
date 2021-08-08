@@ -5,6 +5,7 @@
 #include <boost/thread/thread.hpp>
 #include <iostream>
 #include <string>
+#include <deque>
 
 #include "message.hpp"
 
@@ -16,11 +17,15 @@ class ChatClient {
         void initClient(const tcp::resolver::results_type& endpoints);
     private:
         void startInputLoop();
-        void getMsgHeader();
-        void getMsgBody();
-        void sendToServer(Message& msg_to_send);
+        void readMsgHeader();
+        void readMsgBody();
+        void addMsgToQueue(const Message& msg);
+        void writeMsgToServer();
+        void closeSocket();
         tcp::socket socket_;
         boost::asio::io_context& io_context_;
+        Message temp_msg_;
+        std::deque<Message> msg_queue_;
 };
 
 #endif
