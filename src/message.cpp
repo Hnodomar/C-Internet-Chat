@@ -29,3 +29,15 @@ bool Message::parseHeader() {
     return true;
 }
 
+void Message::setBodyLen(std::size_t new_len) {
+    body_len_ = new_len;
+    if (body_len_ > max_body_len)
+        body_len_ = max_body_len;
+}
+
+void Message::addHeader() {
+    uint8_t header[2];
+    header[0] = body_len_ & 0xff;
+    header[1] = (body_len_ >> 8);
+    std::memcpy(packet_, header, header_len);
+}

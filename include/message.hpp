@@ -15,7 +15,9 @@ class Message {
         uint8_t* getMessagePacketBody();
         uint16_t getMessagePacketBodyLen() const;
         uint16_t getMsgPacketLen() const;
+        void setBodyLen(std::size_t new_len); 
         bool parseHeader();
+        void addHeader();
     private:
         uint8_t packet_[header_len + max_body_len];
         uint16_t body_len_;
