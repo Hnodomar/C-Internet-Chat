@@ -43,15 +43,8 @@ void ChatClient::startInputLoop() {
 }
 
 void ChatClient::constructMsg(char* user_input) {
-    Message msg_to_send;
-    msg_to_send.setBodyLen(std::strlen(user_input) + username_.length());
-    writeUsernameToMsgBody(msg_to_send, username_);
-    std::memcpy(
-        msg_to_send.getMessagePacketBody() + username_.length(), 
-        user_input,
-        msg_to_send.getMessagePacketBodyLen() 
-    );
-    msg_to_send.addHeader('M');
+    std::string msg_body = username_ + std::string(user_input);
+    Message msg_to_send(msg_body, msg_body.length(), 'M');
     addMsgToQueue(msg_to_send);    
 }
 
@@ -75,14 +68,6 @@ void ChatClient::interpretCommand(const char* input) {
     else std::cout << "Invalid Command - still checking username" << std::endl;
 }
 
-void ChatClient::writeUsernameToMsgBody(Message& msg, std::string& username) {
-    std::memcpy(
-        msg.getMessagePacketBody(),
-        username.c_str(),
-        username.length()
-    );
-}
-
 void ChatClient::setClientNick(std::string nick) {
     if (nick.length() > 10)
         std::cout << "Invalid nick: maximum length is 10 characters" << std::endl;
@@ -91,10 +76,7 @@ void ChatClient::setClientNick(std::string nick) {
     else {
         username_temp_ = (nick + ": ");
         checking_username_ = true;
-        Message check_user_msg;
-        check_user_msg.setBodyLen(nick.length());
-        check_user_msg.addHeader('N');
-        writeUsernameToMsgBody(check_user_msg, nick);
+        Message check_user_msg(nick, nick.length(), 'N');
         boost::asio::async_write(
             socket_,
             boost::asio::buffer(

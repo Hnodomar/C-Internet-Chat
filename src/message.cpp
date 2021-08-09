@@ -2,6 +2,12 @@
 
 Message::Message() : body_len_(0) {}
 
+Message::Message(std::string& msg_body, uint16_t body_len, char type):
+    body_len_(body_len), msg_type_(type) {
+    addHeader(type);  
+    memcpy(getMessagePacketBody(), msg_body.c_str(), body_len);      
+}
+
 uint8_t* Message::getMessagePacket() {
     return packet_;
 }

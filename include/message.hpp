@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <arpa/inet.h>
 
 constexpr uint16_t header_len = 3;
@@ -11,6 +12,7 @@ constexpr uint16_t max_body_len = 512;
 class Message {
     public:
         Message();
+        Message(std::string& server_msg, uint16_t body_len, char type);
         uint8_t* getMessagePacket();
         uint8_t* getMessagePacketBody();
         uint16_t getMessagePacketBodyLen() const;

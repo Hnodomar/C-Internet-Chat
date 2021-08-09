@@ -35,10 +35,7 @@ void ChatConnection::readMsgBody() {
                 if (temp_msg_.type() == 'M')
                     chatroom_.deliverMsgToUsers(temp_msg_);
                 else if (temp_msg_.type() == 'N') {
-                    char nick_available = 'N';
-                    if (chatroom_.nickAvailable(temp_msg_, nick))
-                        nick_available = 'Y';
-                    else nick_available = 'N';
+                    char nick_available = chatroom_.nickAvailable(temp_msg_, nick) ? 'Y' : 'N';
                     notifyClientNickStatus(nick_available);
                 }
                 //else if (temp_msg_.type() == 'J')
@@ -62,9 +59,8 @@ void ChatConnection::notifyClientNickStatus(char nick_available) {
             nick_msg.getMsgPacketLen()
         ),
         [this, nick_available](boost::system::error_code ec, std::size_t) {
-            if (ec) {
-                notifyClientNickStatus(nick_available);
-            }
+            if (!ec)
+                std::cout << "Server: sent nick status to client" << std::endl;
         }
     );
 }
