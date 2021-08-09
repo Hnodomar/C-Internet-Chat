@@ -5,11 +5,23 @@ ChatConnection::ChatConnection(tcp::socket socket, chatrooms& chat_rooms):
     socket_(std::move(socket)), chatrooms_set_(chat_rooms) {}
 
 void ChatConnection::init() {
+    sendClientRoomList(getChatroomNameList());
     readMsgHeader();
 }
 
-void ChatConnection::sendClientRoomList(std::string& room_list) {
-
+void ChatConnection::sendClientRoomList(const std::string& room_list) {
+    boost::asio::async_write(
+        socket_,
+        boost::asio::buffer(
+            room_list,
+            room_list.length()
+        ),
+        [this](boost::system::error_code ec, std::size_t) {
+            if (!ec) {
+                std::cout << "Server: sent client chatroom list" << std::endl;
+            }
+        } 
+    );
 }
 
 void ChatConnection::readMsgHeader() {

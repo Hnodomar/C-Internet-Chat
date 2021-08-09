@@ -48,15 +48,19 @@ void ChatClient::constructMsg(char* user_input) {
     addMsgToQueue(msg_to_send);    
 }
 
-void ChatClient::interpretCommand(const char* input) {
+std::tuple<std::string, std::string> ChatClient::getCmdAndArg(const char* input) {
     std::string fullstr(input);
     uint16_t index = fullstr.find(' ');
     if (index == std::string::npos) {
-        std::cout << "Invalid command" << std::endl;
-        return;
+        return {"", ""};
     }
     std::string command = fullstr.substr(0, index);
     std::string argument = fullstr.substr(index + 1);
+    return {command, argument};
+}
+
+void ChatClient::interpretCommand(const char* input) {
+    auto [command, argument] = getCmdAndArg(input);
     if (!checking_username_) {
         if (command == "/nick")
             setClientNick(argument);

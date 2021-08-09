@@ -3,13 +3,16 @@
 
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <iostream>
 #include <string>
+#include <tuple>
 #include <deque>
 
 #include "message.hpp"
 
 using boost::asio::ip::tcp;
+typedef boost::tuple<std::string, std::string> CmdAndArg;
 
 class ChatClient {
     public:
@@ -26,6 +29,8 @@ class ChatClient {
         void addMsgToQueue(const Message& msg);
         void writeMsgToServer();
         void closeSocket();
+        std::tuple<std::string, std::string> getCmdAndArg(const char* input);
+
         tcp::socket socket_;
         std::string username_;
         std::string username_temp_;

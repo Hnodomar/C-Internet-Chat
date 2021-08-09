@@ -25,7 +25,7 @@ class ChatConnection : public SharedConnection, public ChatUser {
         void notifyClientNickStatus(char nick_available);
         void handleJoinRoomMsg();
         void joinRoomClientNotification(char success);
-        void sendClientRoomList(std::string& roomlist);
+        void sendClientRoomList(const std::string& roomlist);
         bool chatroomNameExists(std::string& name) const;
         std::string getChatroomNameList() const;
         chatrooms::iterator getChatroomItrFromName(std::string& name) const;
