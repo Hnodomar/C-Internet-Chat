@@ -17,12 +17,16 @@ class ChatClient {
         void initClient(const tcp::resolver::results_type& endpoints);
     private:
         void startInputLoop();
+        void constructMsg(char* user_input);
+        void interpretCommand(const char* input);
+        void setClientNick(std::string& nick);
         void readMsgHeader();
         void readMsgBody();
         void addMsgToQueue(const Message& msg);
         void writeMsgToServer();
         void closeSocket();
         tcp::socket socket_;
+        std::string username_;
         boost::asio::io_context& io_context_;
         Message temp_msg_;
         std::deque<Message> msg_queue_;

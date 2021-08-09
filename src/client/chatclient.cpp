@@ -31,18 +31,57 @@ void ChatClient::startInputLoop() {
         io_context_.run(); //run async recv in one thread
     });                    //get input from another
     char user_input[max_body_len + 1];
-    while (std::cin.getline(user_input, max_body_len + 1)) {
-        Message msg_to_send;
-        msg_to_send.setBodyLen(std::strlen(user_input));
-        std::memcpy(
-            msg_to_send.getMessagePacketBody(), 
-            user_input,
-            msg_to_send.getMessagePacketBodyLen() 
-        );
-        msg_to_send.addHeader();
-        addMsgToQueue(msg_to_send);
+    while (std::cin.getline(user_input, (max_body_len - username_.length()) + 1)) {
+        if (user_input[0] == '/')
+            interpretCommand(user_input);
+        else if (!username_.empty())
+            constructMsg(user_input);
+        else 
+            std::cout << "Please set username: /nick <user>" << std::endl;
     }
     t.join();
+}
+
+void ChatClient::constructMsg(char* user_input) {
+    Message msg_to_send;
+    msg_to_send.setBodyLen(std::strlen(user_input) + username_.length());
+    std::memcpy(
+        msg_to_send.getMessagePacketBody(),
+        username_.c_str(),
+        username_.length()
+    );
+    std::memcpy(
+        msg_to_send.getMessagePacketBody() + username_.length(), 
+        user_input,
+        msg_to_send.getMessagePacketBodyLen() 
+    );
+    msg_to_send.addHeader();
+    addMsgToQueue(msg_to_send);    
+}
+
+void ChatClient::interpretCommand(const char* input) {
+    std::string fullstr(input);
+    uint16_t index = fullstr.find(' ');
+    if (index == std::string::npos) {
+        std::cout << "Invalid command" << std::endl;
+        return;
+    }
+    std::string command = fullstr.substr(0, index);
+    std::string argument = fullstr.substr(index + 1);
+    if (command == "/nick")
+        setClientNick(argument);
+    else if (command == "/join")
+        return;
+    else 
+        std::cout << "Invalid command" << std::endl;
+}
+
+void ChatClient::setClientNick(std::string& nick) {
+    if (nick.length() > 10)
+        std::cout << "Invalid nick: maximum length is 10 characters" << std::endl;
+    else if (nick == "") 
+        std::cout << "Invalid nick" << std::endl;
+    else username_ = (nick + ": ");
 }
 
 void ChatClient::addMsgToQueue(const Message& msg) {
