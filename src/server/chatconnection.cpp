@@ -32,10 +32,39 @@ void ChatConnection::readMsgBody() {
         ),
         [this, self](boost::system::error_code ec, std::size_t) {
             if (!ec) {
-                chatroom_.deliverMsgToUsers(temp_msg_);
+                if (temp_msg_.type() == 'M')
+                    chatroom_.deliverMsgToUsers(temp_msg_);
+                else if (temp_msg_.type() == 'N') {
+                    char nick_available = 'N';
+                    if (chatroom_.nickAvailable(temp_msg_, nick))
+                        nick_available = 'Y';
+                    else nick_available = 'N';
+                    notifyClientNickStatus(nick_available);
+                }
+                //else if (temp_msg_.type() == 'J')
                 readMsgHeader();
             }
             else chatroom_.leave(self);
+        }
+    );
+}
+
+void ChatConnection::notifyClientNickStatus(char nick_available) {
+    Message nick_msg;
+    uint16_t len = 1;
+    nick_msg.setBodyLen(len);
+    nick_msg.addHeader('N');
+    *(nick_msg.getMessagePacketBody()) = nick_available;
+    boost::asio::async_write(
+        socket_,
+        boost::asio::buffer(
+            nick_msg.getMessagePacket(),
+            nick_msg.getMsgPacketLen()
+        ),
+        [this, nick_available](boost::system::error_code ec, std::size_t) {
+            if (ec) {
+                notifyClientNickStatus(nick_available);
+            }
         }
     );
 }

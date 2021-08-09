@@ -21,6 +21,7 @@ class ChatConnection : public SharedConnection, public ChatUser {
         void readMsgHeader();
         void readMsgBody();
         void writeMsgToClient();
+        void notifyClientNickStatus(char nick_available);
         ChatRoom& chatroom_;
         tcp::socket socket_;
         Message temp_msg_;

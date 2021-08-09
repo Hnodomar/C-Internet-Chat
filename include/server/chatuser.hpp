@@ -8,6 +8,7 @@ class ChatUser {
     public:
         virtual ~ChatUser() {}
         virtual void deliverMsgToConnection(const Message& msg) = 0;
+        char nick[10];
 };
 
 typedef std::shared_ptr<ChatUser> chat_user_ptr;

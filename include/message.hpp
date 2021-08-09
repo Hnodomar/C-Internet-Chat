@@ -18,6 +18,7 @@ class Message {
         void setBodyLen(std::size_t new_len); 
         bool parseHeader();
         void addHeader(char tag);
+        char type() {return msg_type_;}
     private:
         uint8_t packet_[header_len + max_body_len];
         char msg_type_;

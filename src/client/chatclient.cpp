@@ -45,17 +45,13 @@ void ChatClient::startInputLoop() {
 void ChatClient::constructMsg(char* user_input) {
     Message msg_to_send;
     msg_to_send.setBodyLen(std::strlen(user_input) + username_.length());
-    std::memcpy(
-        msg_to_send.getMessagePacketBody(),
-        username_.c_str(),
-        username_.length()
-    );
+    writeUsernameToMsgBody(msg_to_send, username_);
     std::memcpy(
         msg_to_send.getMessagePacketBody() + username_.length(), 
         user_input,
         msg_to_send.getMessagePacketBodyLen() 
     );
-    msg_to_send.addHeader();
+    msg_to_send.addHeader('M');
     addMsgToQueue(msg_to_send);    
 }
 
@@ -68,20 +64,53 @@ void ChatClient::interpretCommand(const char* input) {
     }
     std::string command = fullstr.substr(0, index);
     std::string argument = fullstr.substr(index + 1);
-    if (command == "/nick")
-        setClientNick(argument);
-    else if (command == "/join")
-        return;
-    else 
-        std::cout << "Invalid command" << std::endl;
+    if (!checking_username_) {
+        if (command == "/nick")
+            setClientNick(argument);
+        else if (command == "/join" && !username_.empty())
+            return;
+        else 
+            std::cout << "Invalid command" << std::endl;
+    }
+    else std::cout << "Invalid Command - still checking username" << std::endl;
 }
 
-void ChatClient::setClientNick(std::string& nick) {
+void ChatClient::writeUsernameToMsgBody(Message& msg, std::string& username) {
+    std::memcpy(
+        msg.getMessagePacketBody(),
+        username.c_str(),
+        username.length()
+    );
+}
+
+void ChatClient::setClientNick(std::string nick) {
     if (nick.length() > 10)
         std::cout << "Invalid nick: maximum length is 10 characters" << std::endl;
     else if (nick == "") 
         std::cout << "Invalid nick" << std::endl;
-    else username_ = (nick + ": ");
+    else {
+        username_temp_ = (nick + ": ");
+        checking_username_ = true;
+        Message check_user_msg;
+        check_user_msg.setBodyLen(nick.length());
+        check_user_msg.addHeader('N');
+        writeUsernameToMsgBody(check_user_msg, nick);
+        boost::asio::async_write(
+            socket_,
+            boost::asio::buffer(
+                check_user_msg.getMessagePacket(),
+                check_user_msg.getMsgPacketLen()
+            ),
+            [this](boost::system::error_code ec, std::size_t a) {
+                if (!ec) std::cout << "Requesting nick from server" << std::endl;
+                else {
+                    std::cout << "Failed to request nick from server" << std::endl;
+                    checking_username_ = false;
+                    username_temp_ = "";
+                }
+            }
+        );
+    }
 }
 
 void ChatClient::addMsgToQueue(const Message& msg) {
@@ -133,13 +162,28 @@ void ChatClient::readMsgBody() {
         ),  
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec) {
-                std::cout.write(
-                    reinterpret_cast<const char*>(
-                        temp_msg_.getMessagePacketBody()
-                    ),
-                    temp_msg_.getMessagePacketBodyLen()
-                );
-                std::cout << "\n";
+                if (temp_msg_.type() == 'M') {
+                    std::cout.write(
+                        reinterpret_cast<const char*>(
+                            temp_msg_.getMessagePacketBody()
+                        ),
+                        temp_msg_.getMessagePacketBodyLen()
+                    );
+                    std::cout << "\n";
+                }
+                else if (temp_msg_.type() == 'N') {
+                    uint8_t* nick_available = temp_msg_.getMessagePacketBody();
+                    if ((*nick_available) == 'Y') {
+                        std::cout << "Nick change success! Nick changed to: "
+                            << username_temp_.substr(0, username_temp_.length() - 2)
+                            << std::endl;
+                        username_ = username_temp_;
+                    }
+                    else
+                        std::cout << "Nick taken! Please choose another" << std::endl;
+                    checking_username_ = false;
+                    username_temp_ = "";
+                }
                 readMsgHeader();
             }
             else closeSocket();
