@@ -21,7 +21,7 @@ uint16_t Message::getMsgPacketLen() const {
 bool Message::parseHeader() {
     uint8_t header[header_len + 1] = "";
     std::memcpy(header, packet_, header_len);
-    body_len_ = ntohs(*header);
+    body_len_ = *header;
     if (body_len_ > max_body_len) {
         body_len_ = 0;
         return false;

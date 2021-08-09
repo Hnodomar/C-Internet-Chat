@@ -11,12 +11,14 @@ file(GLOB server_sources "src/server/*.cpp" "src/message.cpp")
 file(GLOB server_includes "include/server" "include")
 
 add_executable(server ${server_sources})
-target_include_directories(server ${Boost_INCLUDE_DIR} ${server_includes})
+target_include_directories(server PUBLIC ${server_includes})
 target_link_libraries(server ${Boost_LIBRARIES})
 
 file(GLOB client_sources "src/client/*.cpp" "src/message.cpp")
 file(GLOB client_includes "include/client" "include")
 
 add_executable(client ${client_sources})
-target_include_directories(client ${Boost_INCLUDE_DIR} ${client_includes})
+target_include_directories(client PUBLIC ${client_includes})
 target_link_libraries(client ${Boost_LIBRARIES})
+
+include_directories(${Boost_INCLUDE_DIR})

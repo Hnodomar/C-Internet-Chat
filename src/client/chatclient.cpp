@@ -14,13 +14,19 @@ void ChatClient::initClient(const tcp::resolver::results_type& endpoints) {
         socket_,
         endpoints,
         [this](boost::system::error_code ec, tcp::endpoint) {
-            if (!ec) readMsgHeader();
+            if (!ec) {
+                std::cout << "Successfully connected to " 
+                    << socket_.remote_endpoint().address().to_string()
+                    << std::endl;
+                readMsgHeader();
+            }
         }
     );
     startInputLoop();
 }
 
 void ChatClient::startInputLoop() {
+    std::cout << "Thread started\n";
     boost::thread t([this](){
         io_context_.run(); //run async recv in one thread
     });                    //get input from another

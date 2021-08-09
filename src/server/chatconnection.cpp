@@ -1,4 +1,5 @@
 #include "chatconnection.hpp"
+#include <iostream>
 
 ChatConnection::ChatConnection(tcp::socket socket, ChatRoom& chatroom):
     socket_(std::move(socket)), chatroom_(chatroom) {}

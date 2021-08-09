@@ -1,12 +1,11 @@
 #include "chatserver.hpp"
 
-ChatServer::ChatServer(
-                    boost::asio::io_context& io_context,
-                    const tcp::endpoint& endpoint
-                    ): acceptor_(io_context, endpoint)
-                    {
-                        acceptConnections();
-                    }
+ChatServer::ChatServer(boost::asio::io_context& io_context,
+    const tcp::endpoint& endpoint)
+    : acceptor_(io_context, endpoint)
+    {
+        acceptConnections();
+    }
 
 void ChatServer::acceptConnections() {
     acceptor_.async_accept(
