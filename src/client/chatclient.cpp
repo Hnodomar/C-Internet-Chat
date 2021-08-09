@@ -26,7 +26,6 @@ void ChatClient::initClient(const tcp::resolver::results_type& endpoints) {
 }
 
 void ChatClient::startInputLoop() {
-    std::cout << "Thread started\n";
     boost::thread t([this](){
         io_context_.run(); //run async recv in one thread
     });                    //get input from another
@@ -39,6 +38,7 @@ void ChatClient::startInputLoop() {
         else 
             std::cout << "Please set username: /nick <user>" << std::endl;
     }
+    socket_.close();
     t.join();
 }
 

@@ -21,7 +21,11 @@ uint16_t Message::getMsgPacketLen() const {
 bool Message::parseHeader() {
     uint8_t header[header_len + 1] = "";
     std::memcpy(header, packet_, header_len);
-    body_len_ = *header;
+    body_len_ = (header[0] & 0xff) |
+        ((header[1] & 0xff) << 8);
+    msg_type_ = header[2];
+    if (msg_type_ != 'M' || msg_type_ != 'J' || msg_type_ != 'N')
+        return false;
     if (body_len_ > max_body_len) {
         body_len_ = 0;
         return false;
@@ -35,9 +39,10 @@ void Message::setBodyLen(std::size_t new_len) {
         body_len_ = max_body_len;
 }
 
-void Message::addHeader() {
-    uint8_t header[2];
+void Message::addHeader(char tag) {
+    uint8_t header[header_len];
     header[0] = body_len_ & 0xff;
     header[1] = (body_len_ >> 8);
+    header[2] = static_cast<uint8_t>(tag);
     std::memcpy(packet_, header, header_len);
 }
