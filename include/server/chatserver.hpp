@@ -4,6 +4,7 @@
 #include <set>
 #include <algorithm>
 #include <string>
+#include <iostream>
 #include <memory>
 #include <boost/asio.hpp>
 #include "chatconnection.hpp"
@@ -18,7 +19,7 @@ class ChatServer {
     private:
         void acceptConnections();
         tcp::acceptor acceptor_;
-        ChatRoom chatroom_;
+        std::set<std::shared_ptr<ChatRoom>> chatrooms_;
 };
 
 #endif

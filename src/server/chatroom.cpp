@@ -1,12 +1,21 @@
 #include "chatroom.hpp"
 
+ChatRoom::ChatRoom(std::string room_name)
+    : room_name_(room_name) {}
+
 void ChatRoom::join(chat_user_ptr user) {
     users_.insert(user);
     for (const auto& msg : msg_queue_)
         user->deliverMsgToConnection(msg);
+    deliverMsgToUsers(
+        JoinMessage(user->nick)
+    );
 }
 
 void ChatRoom::leave(chat_user_ptr user) {
+    deliverMsgToUsers(
+        LeaveMessage(user->nick)
+    );
     users_.erase(user);
 }
 

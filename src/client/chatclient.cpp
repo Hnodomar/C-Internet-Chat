@@ -166,6 +166,7 @@ void ChatClient::readMsgBody() {
                     checking_username_ = false;
                     username_temp_ = "";
                 }
+                
                 readMsgHeader();
             }
             else closeSocket();
