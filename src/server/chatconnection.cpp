@@ -5,7 +5,6 @@ ChatConnection::ChatConnection(tcp::socket socket, chatrooms& chat_rooms):
     socket_(std::move(socket)), chatrooms_set_(chat_rooms) {}
 
 void ChatConnection::init() {
-    //sendClientRoomList();
     readMsgHeader();
 }
 
