@@ -23,10 +23,12 @@ class ChatConnection : public SharedConnection, public ChatUser {
         void readMsgBody();
         void writeMsgToClient();
         void notifyClientNickStatus(char nick_available);
+        void handleChatMsg();
         void handleJoinRoomMsg();
         void handleNickMsg();
+        void handleListRoomsMsg();
         void joinRoomClientNotification(char success);
-        void sendClientRoomList(const std::string& roomlist);
+        void sendClientRoomList();
         bool chatroomNameExists(std::string& name) const;
         std::string getChatroomNameList() const;
         chatrooms::iterator getChatroomItrFromName(std::string& name) const;

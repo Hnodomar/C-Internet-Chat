@@ -30,7 +30,7 @@ bool Message::parseHeader() {
     body_len_ = (header[0] & 0xff) |
         ((header[1] & 0xff) << 8);
     msg_type_ = header[2];
-    if (msg_type_ != 'M' && msg_type_ != 'J' && msg_type_ != 'N')
+    if (msg_type_ != 'M' && msg_type_ != 'J' && msg_type_ != 'N' && msg_type_ != 'L')
         return false;
     if (body_len_ > max_body_len) {
         body_len_ = 0;

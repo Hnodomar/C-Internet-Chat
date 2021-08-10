@@ -29,11 +29,15 @@ class ChatClient {
         void writeMsgToServer();
         void closeSocket();
         void askServerToJoinRoom(std::string& roomname);
+        void askServerForRoomList();
+        void askServerForUserList();
+        void askServerToCreateRoom(std::string& roomname);
         CmdAndArg getCmdAndArg(const char* input);
 
         void handleChatMsg();
         void handleNickMsg();
         void handleJoinMsg();
+        void handleRoomListMsg();
 
         tcp::socket socket_;
         std::string username_;

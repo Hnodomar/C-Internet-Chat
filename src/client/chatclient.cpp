@@ -50,9 +50,9 @@ void ChatClient::constructMsg(char* user_input) {
 
 CmdAndArg ChatClient::getCmdAndArg(const char* input) {
     std::string fullstr(input);
-    uint16_t index = fullstr.find(' ');
+    std::size_t index = fullstr.find(' ');
     if (index == std::string::npos) {
-        return {"", ""};
+        return {fullstr, ""};
     }
     std::string command = fullstr.substr(0, index);
     std::string argument = fullstr.substr(index + 1);
@@ -64,12 +64,46 @@ void ChatClient::interpretCommand(const char* input) {
     if (!checking_username_) {
         if (command == "/nick")
             setClientNick(argument);
+        else if (command == "/list")
+            askServerForRoomList();
+        else if (command == "/users")
+            askServerForUserList();
+        else if (command == "/create")
+            askServerToCreateRoom(argument);
         else if (command == "/join" && !username_.empty())
             askServerToJoinRoom(argument);
         else 
             std::cout << "Invalid command" << std::endl;
     }
     else std::cout << "Invalid Command - still checking username" << std::endl;
+}
+
+void ChatClient::askServerToCreateRoom(std::string& roomname) {
+
+}
+
+void ChatClient::askServerForUserList() {
+
+}
+
+void ChatClient::askServerForRoomList() {
+    Message request_roomlist(
+        std::string(1, 'L'),
+        1,
+        'L'
+    );
+    boost::asio::async_write(
+        socket_,
+        boost::asio::buffer(
+            request_roomlist.getMessagePacket(),
+            request_roomlist.getMsgPacketLen()
+        ),
+        [this](boost::system::error_code ec, std::size_t) {
+            if (!ec)
+                std::cout << "Requesting room list from server" << std::endl; 
+            else std::cout << "failed\n";
+        }
+    );  
 }
 
 void ChatClient::setClientNick(std::string nick) {
@@ -152,8 +186,9 @@ void ChatClient::readMsgHeader() {
             header_len
         ),
         [this](boost::system::error_code ec, std::size_t) {
-            if (!ec && temp_msg_.parseHeader())
+            if (!ec && temp_msg_.parseHeader()) {
                 readMsgBody();
+            }
             else closeSocket(); 
         }
     );
@@ -178,6 +213,8 @@ void ChatClient::readMsgBody() {
                     case 'J':
                         handleJoinMsg();
                         break;
+                    case 'L':
+                        handleRoomListMsg();
                     default:
                         break;
                 }
@@ -186,6 +223,11 @@ void ChatClient::readMsgBody() {
             else closeSocket();
         }
     );
+}
+
+void ChatClient::handleRoomListMsg() {
+    std::cout << "Room List:\n"
+        << temp_msg_.getMessagePacketBody() << std::endl;
 }
 
 void ChatClient::handleChatMsg() {

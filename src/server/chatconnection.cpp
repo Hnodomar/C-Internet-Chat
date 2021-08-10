@@ -5,16 +5,22 @@ ChatConnection::ChatConnection(tcp::socket socket, chatrooms& chat_rooms):
     socket_(std::move(socket)), chatrooms_set_(chat_rooms) {}
 
 void ChatConnection::init() {
-    //sendClientRoomList(getChatroomNameList());
+    //sendClientRoomList();
     readMsgHeader();
 }
 
-void ChatConnection::sendClientRoomList(const std::string& room_list) {
+void ChatConnection::sendClientRoomList() {
+    std::string room_names(getChatroomNameList());
+    Message room_list(
+        room_names,
+        room_names.length(),
+        'L'
+    );
     boost::asio::async_write(
         socket_,
         boost::asio::buffer(
-            room_list,
-            room_list.length()
+            room_list.getMessagePacket(),
+            room_list.getMsgPacketLen()
         ),
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec) {
@@ -30,8 +36,9 @@ void ChatConnection::readMsgHeader() {
         socket_,
         boost::asio::buffer(temp_msg_.getMessagePacket(), header_len),
         [this, self](boost::system::error_code ec, std::size_t) {
-            if (!ec && temp_msg_.parseHeader())
+            if (!ec && temp_msg_.parseHeader()) {
                 readMsgBody();
+            }
             else {
                 if (chatroom_ != nullptr) 
                     chatroom_->leave(self);
@@ -52,15 +59,18 @@ void ChatConnection::readMsgBody() {
             if (!ec) {
                 switch(temp_msg_.type()) {
                     case 'M':
-                        if (chatroom_ != nullptr)
-                            chatroom_->deliverMsgToUsers(temp_msg_);
+                        handleChatMsg();
                         break;
-                    case 'N': {
+                    case 'N':
                         handleNickMsg();
                         break;
-                    }
                     case 'J':
                         handleJoinRoomMsg();
+                        break;
+                    case 'L':
+                        handleListRoomsMsg();
+                        break;
+                    default:
                         break;
                 }
                 readMsgHeader();
@@ -71,6 +81,15 @@ void ChatConnection::readMsgBody() {
             }
         }
     );
+}
+
+void ChatConnection::handleListRoomsMsg() {
+    sendClientRoomList();
+}
+
+void ChatConnection::handleChatMsg() {
+    if (chatroom_ != nullptr)
+        chatroom_->deliverMsgToUsers(temp_msg_);
 }
 
 void ChatConnection::handleNickMsg() {
@@ -133,7 +152,7 @@ void ChatConnection::joinRoomClientNotification(char success) {
     );
 }
 
-std::string ChatConnection::getChatroomNameList() const{
+std::string ChatConnection::getChatroomNameList() const {
     std::string list;
     for (const auto& chatroom : chatrooms_set_) {
         list += chatroom->getRoomName();
