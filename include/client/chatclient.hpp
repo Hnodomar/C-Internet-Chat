@@ -39,6 +39,7 @@ class ChatClient {
         void handleJoinMsg();
         void handleRoomListMsg();
         void handleUserListMsg();
+        void handleCreateRoomMsg();
 
         void outputMsgBody();
 

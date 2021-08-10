@@ -18,6 +18,7 @@ class ChatConnection : public SharedConnection, public ChatUser {
         ChatConnection(tcp::socket socket, chatrooms& chatrooms);
         void init();
         void deliverMsgToConnection(const Message& msg) override;
+        chatrooms& getChatrooms() {return chatrooms_set_;}
     private:
         void readMsgHeader();
         void readMsgBody();

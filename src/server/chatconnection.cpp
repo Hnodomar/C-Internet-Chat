@@ -99,8 +99,12 @@ void ChatConnection::handleCreateRoomMsg() {
     if (chatroomNameExists(new_room_name))
         sendClientNotification('C', 'N');
     else {
-        sendClientNotification('Y', 'Y');
-        //create room
+        sendClientNotification('C', 'Y');
+        getChatrooms().emplace(
+            std::make_shared<ChatRoom>(
+                new_room_name
+            )
+        );
     }
 }
 
@@ -147,10 +151,11 @@ void ChatConnection::handleNickMsg() {
                 NickChange(nick, nick_request)
             );
     }   
-    if (nick_available) 
+    if (nick_available) {
         strncpy(nick, nick_request, 10);
-    char notification = nick_available ? 'Y' : 'N';
-    sendClientNotification('N', notification);
+        sendClientNotification('N', 'Y');
+    }
+    else sendClientNotification('N', 'N');
 }
 
 void ChatConnection::handleJoinRoomMsg() {

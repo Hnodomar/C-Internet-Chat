@@ -7,7 +7,7 @@ struct JoinMessage : public Message {
     JoinMessage(const std::string& username):
         Message(
             std::string(username + std::string(" joined the room")), 
-            (uint16_t)(username.length() + 19), 
+            (uint16_t)(username.length() + 16), 
             'M'
         ) 
     {}

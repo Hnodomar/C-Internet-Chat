@@ -79,12 +79,34 @@ void ChatClient::interpretCommand(const char* input) {
 }
 
 void ChatClient::askServerToCreateRoom(std::string& roomname) {
-    
+    if (roomname.empty()) {
+        std::cout << "Invalid roomname" << std::endl;
+        return;
+    }
+    Message request_room_creation(
+        roomname,
+        roomname.length(),
+        'C'
+    );
+    boost::asio::async_write(
+        socket_,
+        boost::asio::buffer(
+            request_room_creation.getMessagePacket(),
+            request_room_creation.getMsgPacketLen()
+        ),
+        [this](boost::system::error_code ec, std::size_t) {
+            if (!ec)
+                std::cout << "Requesting room creation by server" << std::endl; 
+            else std::cout << "failed\n";
+        }
+    );  
 }
 
 void ChatClient::askServerForUserList() {
-    if (!in_chatroom_)
+    if (!in_chatroom_) {
         std::cout << "Client: cannot fetch users list when not in a chatroom" << std::endl;
+        return;
+    }
     Message request_userlist(
         std::string(1, 'U'),
         1,
@@ -237,6 +259,9 @@ void ChatClient::readMsgBody() {
                     case 'U':
                         handleUserListMsg();
                         break;
+                    case 'C':
+                        handleCreateRoomMsg();
+                        break;
                     default:
                         break;
                 }
@@ -245,6 +270,20 @@ void ChatClient::readMsgBody() {
             else closeSocket();
         }
     );
+}
+
+void ChatClient::handleCreateRoomMsg() {
+    uint8_t notification = *(temp_msg_.getMessagePacketBody());
+    switch(notification) {
+        case 'Y':
+            std::cout << "Room successfully created!" << std::endl;
+            break;
+        case 'N':
+            std::cout << "Room failed to create!" << std::endl;
+            break;
+        default:
+            break;
+    }
 }
 
 void ChatClient::handleUserListMsg() {
