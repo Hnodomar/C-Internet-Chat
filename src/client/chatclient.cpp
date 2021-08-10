@@ -111,7 +111,7 @@ void ChatClient::askServerToJoinRoom(std::string& roomname) {
             join_request.getMessagePacket(),
             join_request.getMsgPacketLen()  
         ),
-        [this, &roomname](boost::system::error_code ec, std::size_t) {
+        [this, roomname](boost::system::error_code ec, std::size_t) {
             if (!ec) {
                 std::cout << "Requesting to join room " << roomname << std::endl;
             }

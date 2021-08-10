@@ -95,7 +95,6 @@ void ChatConnection::handleJoinRoomMsg() {
         ),
         temp_msg_.getMessagePacketBodyLen()   
     );
-    std::string username;
     auto chatroom_itr = getChatroomItrFromName(room_name);
     if (chatroom_itr != chatrooms_set_.end()) {
         if ((*chatroom_itr)->nickAvailable(nick)) {
