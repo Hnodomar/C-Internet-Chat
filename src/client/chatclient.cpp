@@ -79,10 +79,12 @@ void ChatClient::interpretCommand(const char* input) {
 }
 
 void ChatClient::askServerToCreateRoom(std::string& roomname) {
-
+    
 }
 
 void ChatClient::askServerForUserList() {
+    if (!in_chatroom_)
+        std::cout << "Client: cannot fetch users list when not in a chatroom" << std::endl;
     Message request_userlist(
         std::string(1, 'U'),
         1,
@@ -288,6 +290,7 @@ void ChatClient::handleJoinMsg() {
     switch(join_response) {
         case 'Y':
             std::cout << "Successfully joined room" << std::endl;
+            in_chatroom_ = true;
             break;
         case 'N':
             std::cout << "Cannot join room: doesn't exist" << std::endl;

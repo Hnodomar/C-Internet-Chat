@@ -73,6 +73,9 @@ void ChatConnection::readMsgBody() {
                     case 'U':
                         handleListUsersMsg();
                         break;
+                    case 'C':
+                        handleCreateRoomMsg();
+                        break;
                     default:
                         break;
                 }
@@ -84,6 +87,21 @@ void ChatConnection::readMsgBody() {
             }
         }
     );
+}
+
+void ChatConnection::handleCreateRoomMsg() {
+    std::string new_room_name(
+        reinterpret_cast<char*>(
+            temp_msg_.getMessagePacketBody()
+        ),
+        temp_msg_.getMessagePacketBodyLen()   
+    );
+    if (chatroomNameExists(new_room_name))
+        sendClientNotification('C', 'N');
+    else {
+        sendClientNotification('Y', 'Y');
+        //create room
+    }
 }
 
 void ChatConnection::handleListUsersMsg() {
@@ -131,7 +149,8 @@ void ChatConnection::handleNickMsg() {
     }   
     if (nick_available) 
         strncpy(nick, nick_request, 10);
-    notifyClientNickStatus(nick_available ? 'Y' : 'N');
+    char notification = nick_available ? 'Y' : 'N';
+    sendClientNotification('N', notification);
 }
 
 void ChatConnection::handleJoinRoomMsg() {
@@ -144,28 +163,30 @@ void ChatConnection::handleJoinRoomMsg() {
     auto chatroom_itr = getChatroomItrFromName(room_name);
     if (chatroom_itr != chatrooms_set_.end()) {
         if ((*chatroom_itr)->nickAvailable(nick)) {
+            if (chatroom_ != nullptr)
+                chatroom_->leave(shared_from_this());
             chatroom_ = (*chatroom_itr);
             (*chatroom_itr)->join(shared_from_this());
-            joinRoomClientNotification('Y'); //room exists and nick not in use
+            sendClientNotification('J', 'Y'); //room exists and nick not in use
         }
-        else joinRoomClientNotification('U'); //room exists but nick in use
+        else sendClientNotification('J', 'U'); //room exists but nick in use
     }
     else {
-        joinRoomClientNotification('N'); //room doesnt exist
+        sendClientNotification('J', 'N'); //room doesnt exist
     }
 }
 
-void ChatConnection::joinRoomClientNotification(char success) {
-    Message notification(
-        std::string(1, success),
+void ChatConnection::sendClientNotification(char type, char notification) {
+    Message notification_msg(
+        std::string(1, notification),
         1,
-        'J'
+        type
     );
     boost::asio::async_write(
         socket_,
         boost::asio::buffer(
-            notification.getMessagePacket(),
-            notification.getMsgPacketLen()
+            notification_msg.getMessagePacket(),
+            notification_msg.getMsgPacketLen()
         ),
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec)
@@ -204,21 +225,6 @@ chatrooms::iterator ChatConnection::getChatroomItrFromName(std::string& name) co
 
 bool ChatConnection::chatroomNameExists(std::string& name) const {
     return !(getChatroomItrFromName(name) == chatrooms_set_.end());
-}
-
-void ChatConnection::notifyClientNickStatus(char nick_available) {
-    Message nick_msg(std::string(1, nick_available), 1, 'N');
-    boost::asio::async_write(
-        socket_,
-        boost::asio::buffer(
-            nick_msg.getMessagePacket(),
-            nick_msg.getMsgPacketLen()
-        ),
-        [this, nick_available](boost::system::error_code ec, std::size_t) {
-            if (!ec)
-                std::cout << "Server: sent nick status to client" << std::endl;
-        }
-    );
 }
 
 void ChatConnection::deliverMsgToConnection(const Message& msg) {

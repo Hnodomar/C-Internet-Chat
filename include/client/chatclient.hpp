@@ -46,6 +46,7 @@ class ChatClient {
         std::string username_;
         std::string username_temp_;
         bool checking_username_ = false;
+        bool in_chatroom_ = false;
         boost::asio::io_context& io_context_;
         Message temp_msg_;
         std::deque<Message> msg_queue_;
