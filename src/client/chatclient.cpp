@@ -30,13 +30,15 @@ void ChatClient::startInputLoop() {
         io_context_.run(); //run async recv in one thread
     });                    //get input from another
     char user_input[max_body_len + 1];
+    auto removeUserInput = [](){std::cout << "\033[A" << "\33[2K";};
     while (std::cin.getline(user_input, (max_body_len - username_.length()) + 1)) {
+        removeUserInput();
         if (user_input[0] == '/')
             interpretCommand(user_input);
         else if (!username_.empty())
             constructMsg(user_input);
         else 
-            std::cout << "Please set username: /nick <user>" << std::endl;
+            std::cout << "[ CLIENT ] Please set username: /nick <user>" << std::endl;
     }
     socket_.close();
     t.join();
@@ -73,14 +75,14 @@ void ChatClient::interpretCommand(const char* input) {
         else if (command == "/join" && !username_.empty())
             askServerToJoinRoom(argument);
         else 
-            std::cout << "Invalid command" << std::endl;
+            std::cout << "[ CLIENT ] Invalid command" << std::endl;
     }
-    else std::cout << "Invalid Command - still checking username" << std::endl;
+    else std::cout << "[ CLIENT ] Invalid Command - still checking username" << std::endl;
 }
 
 void ChatClient::askServerToCreateRoom(std::string& roomname) {
     if (roomname.empty()) {
-        std::cout << "Invalid roomname" << std::endl;
+        std::cout << "[ CLIENT ] Invalid roomname" << std::endl;
         return;
     }
     Message request_room_creation(
@@ -96,7 +98,7 @@ void ChatClient::askServerToCreateRoom(std::string& roomname) {
         ),
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec)
-                std::cout << "Requesting room creation by server" << std::endl; 
+                std::cout << "[ CLIENT ] Requesting room creation by server" << std::endl; 
             else std::cout << "failed\n";
         }
     );  
@@ -104,7 +106,7 @@ void ChatClient::askServerToCreateRoom(std::string& roomname) {
 
 void ChatClient::askServerForUserList() {
     if (!in_chatroom_) {
-        std::cout << "Client: cannot fetch users list when not in a chatroom" << std::endl;
+        std::cout << "[ CLIENT ] cannot fetch users list when not in a chatroom" << std::endl;
         return;
     }
     Message request_userlist(
@@ -120,7 +122,7 @@ void ChatClient::askServerForUserList() {
         ),
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec)
-                std::cout << "Requesting user list from server" << std::endl; 
+                std::cout << "[ CLIENT ] Requesting user list from server" << std::endl; 
             else std::cout << "failed\n";
         }
     );  
@@ -140,7 +142,7 @@ void ChatClient::askServerForRoomList() {
         ),
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec)
-                std::cout << "Requesting room list from server" << std::endl; 
+                std::cout << "[ CLIENT ] Requesting room list from server" << std::endl; 
             else std::cout << "failed\n";
         }
     );  
@@ -148,9 +150,9 @@ void ChatClient::askServerForRoomList() {
 
 void ChatClient::setClientNick(std::string nick) {
     if (nick.length() > 10)
-        std::cout << "Invalid nick: maximum length is 10 characters" << std::endl;
+        std::cout << "[ CLIENT ] Invalid nick: maximum length is 10 characters" << std::endl;
     else if (nick == "") 
-        std::cout << "Invalid nick" << std::endl;
+        std::cout << "[ CLIENT ] Invalid nick" << std::endl;
     else {
         username_temp_ = (nick + ": ");
         checking_username_ = true;
@@ -162,9 +164,9 @@ void ChatClient::setClientNick(std::string nick) {
                 check_user_msg.getMsgPacketLen()
             ),
             [this](boost::system::error_code ec, std::size_t a) {
-                if (!ec) std::cout << "Requesting nick from server" << std::endl;
+                if (!ec) std::cout << "[ CLIENT ] Requesting nick from server" << std::endl;
                 else {
-                    std::cout << "Failed to request nick from server" << std::endl;
+                    std::cout << "[ CLIENT ] Failed to request nick from server" << std::endl;
                     checking_username_ = false;
                     username_temp_ = "";
                 }
@@ -187,7 +189,7 @@ void ChatClient::askServerToJoinRoom(std::string& roomname) {
         ),
         [this, roomname](boost::system::error_code ec, std::size_t) {
             if (!ec) {
-                std::cout << "Requesting to join room " << roomname << std::endl;
+                std::cout << "[ CLIENT ] Requesting to join room " << roomname << std::endl;
             }
         }
     );
@@ -276,10 +278,10 @@ void ChatClient::handleCreateRoomMsg() {
     uint8_t notification = *(temp_msg_.getMessagePacketBody());
     switch(notification) {
         case 'Y':
-            std::cout << "Room successfully created!" << std::endl;
+            std::cout << "[ CLIENT ] Room successfully created!" << std::endl;
             break;
         case 'N':
-            std::cout << "Room failed to create!" << std::endl;
+            std::cout << "[ CLIENT ] Room failed to create!" << std::endl;
             break;
         default:
             break;
@@ -287,16 +289,17 @@ void ChatClient::handleCreateRoomMsg() {
 }
 
 void ChatClient::handleUserListMsg() {
-    std::cout << "User List:\n";
+    std::cout << "[ CLIENT ] User List:\n";
     outputMsgBody();
 }
 
 void ChatClient::handleRoomListMsg() {
-    std::cout << "Room List:\n";
+    std::cout << "[ CLIENT ] Room List:\n";
     outputMsgBody();
 }
 
 void ChatClient::handleChatMsg() {
+    std::cout << getTimeString();
     outputMsgBody();
 }
 
@@ -313,13 +316,13 @@ void ChatClient::outputMsgBody() {
 void ChatClient::handleNickMsg() {
     uint8_t* nick_available = temp_msg_.getMessagePacketBody();
     if ((*nick_available) == 'Y') {
-        std::cout << "Nick change success! Nick changed to: "
+        std::cout << "[ CLIENT ] Nick change success! Nick changed to: "
             << username_temp_.substr(0, username_temp_.length() - 2)
             << std::endl;
         username_ = username_temp_;
     }
     else
-        std::cout << "Nick taken! Please choose another" << std::endl;
+        std::cout << "[ CLIENT ] Nick taken! Please choose another" << std::endl;
     checking_username_ = false;
     username_temp_ = "";
 }
@@ -328,14 +331,14 @@ void ChatClient::handleJoinMsg() {
     uint8_t join_response = *(temp_msg_.getMessagePacketBody());
     switch(join_response) {
         case 'Y':
-            std::cout << "Successfully joined room" << std::endl;
+            std::cout << "[ CLIENT ] Successfully joined room" << std::endl;
             in_chatroom_ = true;
             break;
         case 'N':
-            std::cout << "Cannot join room: doesn't exist" << std::endl;
+            std::cout << "[ CLIENT ] Cannot join room: doesn't exist" << std::endl;
             break;
         case 'U':
-            std::cout << "Cannot join room: nick in use" << std::endl;
+            std::cout << "[ CLIENT ] Cannot join room: nick in use" << std::endl;
             break;
         default:
             break;

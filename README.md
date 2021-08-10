@@ -26,4 +26,4 @@ All commands are entered by the user pre-pended with a '/' character.
 
 ## Dependencies
 
-* Boost - set of C++ libraries; ASIO library used for networking https://www.boost.org/
+* Boost 1.75 - set of C++ libraries; ASIO library used for networking https://www.boost.org/

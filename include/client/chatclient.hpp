@@ -9,6 +9,7 @@
 #include <deque>
 
 #include "message.hpp"
+#include "util.hpp"
 
 using boost::asio::ip::tcp;
 typedef std::tuple<std::string, std::string> CmdAndArg;
