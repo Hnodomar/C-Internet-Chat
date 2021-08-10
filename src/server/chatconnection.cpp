@@ -5,7 +5,7 @@ ChatConnection::ChatConnection(tcp::socket socket, chatrooms& chat_rooms):
     socket_(std::move(socket)), chatrooms_set_(chat_rooms) {}
 
 void ChatConnection::init() {
-    sendClientRoomList(getChatroomNameList());
+    //sendClientRoomList(getChatroomNameList());
     readMsgHeader();
 }
 
@@ -32,7 +32,10 @@ void ChatConnection::readMsgHeader() {
         [this, self](boost::system::error_code ec, std::size_t) {
             if (!ec && temp_msg_.parseHeader())
                 readMsgBody();
-            else chatroom_->leave(self);
+            else {
+                if (chatroom_ != nullptr) 
+                    chatroom_->leave(self);
+            }
         }
     );
 }
@@ -49,11 +52,11 @@ void ChatConnection::readMsgBody() {
             if (!ec) {
                 switch(temp_msg_.type()) {
                     case 'M':
-                        chatroom_->deliverMsgToUsers(temp_msg_);
+                        if (chatroom_ != nullptr)
+                            chatroom_->deliverMsgToUsers(temp_msg_);
                         break;
                     case 'N': {
-                        char nick_available = chatroom_->nickAvailable(temp_msg_, nick) ? 'Y' : 'N';
-                        notifyClientNickStatus(nick_available);
+                        handleNickMsg();
                         break;
                     }
                     case 'J':
@@ -62,9 +65,27 @@ void ChatConnection::readMsgBody() {
                 }
                 readMsgHeader();
             }
-            else chatroom_->leave(self);
+            else {
+                if (chatroom_ != nullptr)
+                    chatroom_->leave(self);
+            }
         }
     );
+}
+
+void ChatConnection::handleNickMsg() {
+    char nick_request[10] = "";
+    memcpy(
+        nick_request, 
+        temp_msg_.getMessagePacketBody(), 
+        temp_msg_.getMessagePacketBodyLen()
+    );
+    bool nick_available = true;
+    if (chatroom_ != nullptr) //client is member of a chatroom
+        nick_available = chatroom_->nickAvailable(nick_request);
+    if (nick_available) 
+        strncpy(nick, nick_request, 10);
+    notifyClientNickStatus(nick_available ? 'Y' : 'N');
 }
 
 void ChatConnection::handleJoinRoomMsg() {
@@ -74,13 +95,18 @@ void ChatConnection::handleJoinRoomMsg() {
         ),
         temp_msg_.getMessagePacketBodyLen()   
     );
+    std::string username;
     auto chatroom_itr = getChatroomItrFromName(room_name);
     if (chatroom_itr != chatrooms_set_.end()) {
-        (*chatroom_itr)->join(shared_from_this());
-        joinRoomClientNotification('Y');
+        if ((*chatroom_itr)->nickAvailable(nick)) {
+            chatroom_ = (*chatroom_itr);
+            (*chatroom_itr)->join(shared_from_this());
+            joinRoomClientNotification('Y'); //room exists and nick not in use
+        }
+        else joinRoomClientNotification('U'); //room exists but nick in use
     }
     else {
-        joinRoomClientNotification('N');
+        joinRoomClientNotification('N'); //room doesnt exist
     }
 }
 
@@ -161,7 +187,9 @@ void ChatConnection::writeMsgToClient() {
                 if (!msgs_to_send_client_.empty())
                     writeMsgToClient();
             }
-            else chatroom_->leave(self);
+            else
+                if (chatroom_ != nullptr) 
+                    chatroom_->leave(self);
         }
     );
 }

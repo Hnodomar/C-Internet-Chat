@@ -48,7 +48,7 @@ void ChatClient::constructMsg(char* user_input) {
     addMsgToQueue(msg_to_send);    
 }
 
-std::tuple<std::string, std::string> ChatClient::getCmdAndArg(const char* input) {
+CmdAndArg ChatClient::getCmdAndArg(const char* input) {
     std::string fullstr(input);
     uint16_t index = fullstr.find(' ');
     if (index == std::string::npos) {
@@ -65,7 +65,7 @@ void ChatClient::interpretCommand(const char* input) {
         if (command == "/nick")
             setClientNick(argument);
         else if (command == "/join" && !username_.empty())
-            return;
+            askServerToJoinRoom(argument);
         else 
             std::cout << "Invalid command" << std::endl;
     }
@@ -97,6 +97,26 @@ void ChatClient::setClientNick(std::string nick) {
             }
         );
     }
+}
+
+void ChatClient::askServerToJoinRoom(std::string& roomname) {
+    Message join_request(
+        roomname,
+        roomname.length(),
+        'J'
+    );
+    boost::asio::async_write(
+        socket_,
+        boost::asio::buffer(
+            join_request.getMessagePacket(),
+            join_request.getMsgPacketLen()  
+        ),
+        [this, &roomname](boost::system::error_code ec, std::size_t) {
+            if (!ec) {
+                std::cout << "Requesting to join room " << roomname << std::endl;
+            }
+        }
+    );
 }
 
 void ChatClient::addMsgToQueue(const Message& msg) {
@@ -148,34 +168,65 @@ void ChatClient::readMsgBody() {
         ),  
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec) {
-                if (temp_msg_.type() == 'M') {
-                    std::cout.write(
-                        reinterpret_cast<const char*>(
-                            temp_msg_.getMessagePacketBody()
-                        ),
-                        temp_msg_.getMessagePacketBodyLen()
-                    );
-                    std::cout << "\n";
+                switch(temp_msg_.type()) {
+                    case 'M':
+                        handleChatMsg();
+                        break;
+                    case 'N':
+                        handleNickMsg();
+                        break;
+                    case 'J':
+                        handleJoinMsg();
+                        break;
+                    default:
+                        break;
                 }
-                else if (temp_msg_.type() == 'N') {
-                    uint8_t* nick_available = temp_msg_.getMessagePacketBody();
-                    if ((*nick_available) == 'Y') {
-                        std::cout << "Nick change success! Nick changed to: "
-                            << username_temp_.substr(0, username_temp_.length() - 2)
-                            << std::endl;
-                        username_ = username_temp_;
-                    }
-                    else
-                        std::cout << "Nick taken! Please choose another" << std::endl;
-                    checking_username_ = false;
-                    username_temp_ = "";
-                }
-                
                 readMsgHeader();
             }
             else closeSocket();
         }
     );
+}
+
+void ChatClient::handleChatMsg() {
+    std::cout.write(
+        reinterpret_cast<const char*>(
+            temp_msg_.getMessagePacketBody()
+        ),
+        temp_msg_.getMessagePacketBodyLen()
+    );
+    std::cout << "\n";
+}
+
+void ChatClient::handleNickMsg() {
+    uint8_t* nick_available = temp_msg_.getMessagePacketBody();
+    if ((*nick_available) == 'Y') {
+        std::cout << "Nick change success! Nick changed to: "
+            << username_temp_.substr(0, username_temp_.length() - 2)
+            << std::endl;
+        username_ = username_temp_;
+    }
+    else
+        std::cout << "Nick taken! Please choose another" << std::endl;
+    checking_username_ = false;
+    username_temp_ = "";
+}
+
+void ChatClient::handleJoinMsg() {
+    uint8_t join_response = *(temp_msg_.getMessagePacketBody());
+    switch(join_response) {
+        case 'Y':
+            std::cout << "Successfully joined room" << std::endl;
+            break;
+        case 'N':
+            std::cout << "Cannot join room: doesn't exist" << std::endl;
+            break;
+        case 'U':
+            std::cout << "Cannot join room: nick in use" << std::endl;
+            break;
+        default:
+            break;
+    }
 }
 
 void ChatClient::closeSocket() {

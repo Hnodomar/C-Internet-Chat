@@ -17,7 +17,7 @@ class ChatRoom {
         void join(chat_user_ptr user);
         void leave(chat_user_ptr user);
         void deliverMsgToUsers(const Message& msg);
-        bool nickAvailable(Message& msg, char* current_usernick);
+        bool nickAvailable(char* nick_request);
         std::string getRoomName() {return room_name_;}
     private:
         const std::string room_name_;

@@ -27,18 +27,10 @@ void ChatRoom::deliverMsgToUsers(const Message& msg) {
         user->deliverMsgToConnection(msg);
 }
 
-bool ChatRoom::nickAvailable(Message& msg, char* current_usernick) {
-    bool nick_available = true;
-    char nick_request[10] = "";
-    memcpy(
-        nick_request, 
-        msg.getMessagePacketBody(), 
-        msg.getMessagePacketBodyLen()
-    );
+bool ChatRoom::nickAvailable(char* request_nick) {
     for (const auto& user : users_) {
-        if (!strncmp(nick_request, user->nick, msg.getMessagePacketBodyLen()))
-            nick_available = false;
+        if (!strncmp(request_nick, user->nick, strlen(request_nick)))
+            return false;
     }
-    if (nick_available) strncpy(current_usernick, nick_request, 10);
-    return nick_available;
+    return true;
 }

@@ -20,7 +20,7 @@ void ChatServer::acceptConnections() {
                     << socket.remote_endpoint().address().to_string()
                     << " \n";
                 std::make_shared<ChatConnection>(
-                    std::move(socket)
+                    std::move(socket), chatrooms_
                 )->init();
             }                
             acceptConnections();

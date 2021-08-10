@@ -3,7 +3,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <iostream>
 #include <string>
 #include <tuple>
@@ -12,7 +11,7 @@
 #include "message.hpp"
 
 using boost::asio::ip::tcp;
-typedef boost::tuple<std::string, std::string> CmdAndArg;
+typedef std::tuple<std::string, std::string> CmdAndArg;
 
 class ChatClient {
     public:
@@ -29,7 +28,12 @@ class ChatClient {
         void addMsgToQueue(const Message& msg);
         void writeMsgToServer();
         void closeSocket();
-        std::tuple<std::string, std::string> getCmdAndArg(const char* input);
+        void askServerToJoinRoom(std::string& roomname);
+        CmdAndArg getCmdAndArg(const char* input);
+
+        void handleChatMsg();
+        void handleNickMsg();
+        void handleJoinMsg();
 
         tcp::socket socket_;
         std::string username_;
