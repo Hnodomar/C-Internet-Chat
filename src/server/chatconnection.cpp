@@ -81,8 +81,13 @@ void ChatConnection::handleNickMsg() {
         temp_msg_.getMessagePacketBodyLen()
     );
     bool nick_available = true;
-    if (chatroom_ != nullptr) //client is member of a chatroom
+    if (chatroom_ != nullptr) { //client is member of a chatroom
         nick_available = chatroom_->nickAvailable(nick_request);
+        if (nick_available) 
+            chatroom_->deliverMsgToUsers(
+                NickChange(nick, nick_request)
+            );
+    }   
     if (nick_available) 
         strncpy(nick, nick_request, 10);
     notifyClientNickStatus(nick_available ? 'Y' : 'N');

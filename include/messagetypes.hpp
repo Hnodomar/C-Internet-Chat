@@ -23,4 +23,14 @@ struct LeaveMessage : public Message {
     {}
 };
 
+struct NickChange : public Message {
+    NickChange(const std::string& old_nick, const std::string& new_nick):
+        Message(
+            std::string(old_nick + std::string(" changed nick to " + new_nick)),
+            (uint16_t)(old_nick.length() + 17 + new_nick.length()),
+            'M'
+        )
+    {}
+};
+
 #endif
