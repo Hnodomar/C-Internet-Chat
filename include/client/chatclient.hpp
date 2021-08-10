@@ -38,6 +38,9 @@ class ChatClient {
         void handleNickMsg();
         void handleJoinMsg();
         void handleRoomListMsg();
+        void handleUserListMsg();
+
+        void outputMsgBody();
 
         tcp::socket socket_;
         std::string username_;

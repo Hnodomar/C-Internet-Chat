@@ -83,7 +83,23 @@ void ChatClient::askServerToCreateRoom(std::string& roomname) {
 }
 
 void ChatClient::askServerForUserList() {
-
+    Message request_userlist(
+        std::string(1, 'U'),
+        1,
+        'U'
+    );
+    boost::asio::async_write(
+        socket_,
+        boost::asio::buffer(
+            request_userlist.getMessagePacket(),
+            request_userlist.getMsgPacketLen()
+        ),
+        [this](boost::system::error_code ec, std::size_t) {
+            if (!ec)
+                std::cout << "Requesting user list from server" << std::endl; 
+            else std::cout << "failed\n";
+        }
+    );  
 }
 
 void ChatClient::askServerForRoomList() {
@@ -215,6 +231,10 @@ void ChatClient::readMsgBody() {
                         break;
                     case 'L':
                         handleRoomListMsg();
+                        break;
+                    case 'U':
+                        handleUserListMsg();
+                        break;
                     default:
                         break;
                 }
@@ -225,12 +245,21 @@ void ChatClient::readMsgBody() {
     );
 }
 
+void ChatClient::handleUserListMsg() {
+    std::cout << "User List:\n";
+    outputMsgBody();
+}
+
 void ChatClient::handleRoomListMsg() {
-    std::cout << "Room List:\n"
-        << temp_msg_.getMessagePacketBody() << std::endl;
+    std::cout << "Room List:\n";
+    outputMsgBody();
 }
 
 void ChatClient::handleChatMsg() {
+    outputMsgBody();
+}
+
+void ChatClient::outputMsgBody() {
     std::cout.write(
         reinterpret_cast<const char*>(
             temp_msg_.getMessagePacketBody()

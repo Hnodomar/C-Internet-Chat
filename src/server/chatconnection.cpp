@@ -70,6 +70,9 @@ void ChatConnection::readMsgBody() {
                     case 'L':
                         handleListRoomsMsg();
                         break;
+                    case 'U':
+                        handleListUsersMsg();
+                        break;
                     default:
                         break;
                 }
@@ -79,6 +82,25 @@ void ChatConnection::readMsgBody() {
                 if (chatroom_ != nullptr)
                     chatroom_->leave(self);
             }
+        }
+    );
+}
+
+void ChatConnection::handleListUsersMsg() {
+    std::string user_list_str = getChatroomNicksList();
+    Message user_list(
+        user_list_str,
+        user_list_str.length(),
+        'U'
+    );
+    boost::asio::async_write(
+        socket_,
+        boost::asio::buffer(
+            user_list.getMessagePacket(),
+            user_list.getMsgPacketLen()
+        ),
+        [](boost::system::error_code ec, std::size_t) {
+            std::cout << "Server: sent client user list" << std::endl;
         }
     );
 }
@@ -156,6 +178,15 @@ std::string ChatConnection::getChatroomNameList() const {
     std::string list;
     for (const auto& chatroom : chatrooms_set_) {
         list += chatroom->getRoomName();
+        list += ' ';
+    }
+    return list;
+}
+
+std::string ChatConnection::getChatroomNicksList() const {
+    std::string list;
+    for (const auto& user_ptr : chatroom_->getUsers()) {
+        list += user_ptr->nick;
         list += ' ';
     }
     return list;

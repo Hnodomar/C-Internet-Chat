@@ -19,6 +19,7 @@ class ChatRoom {
         void deliverMsgToUsers(const Message& msg);
         bool nickAvailable(char* nick_request);
         std::string getRoomName() {return room_name_;}
+        std::set<chat_user_ptr>& getUsers(){return users_;}
     private:
         const std::string room_name_;
         std::set<chat_user_ptr> users_;
