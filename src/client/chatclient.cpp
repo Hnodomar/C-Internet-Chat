@@ -158,6 +158,7 @@ void ChatClient::askServerToJoinRoom(std::string& roomname) {
         [this, roomname](boost::system::error_code ec, std::size_t) {
             if (!ec) {
                 std::cout << "[ CLIENT ] Requesting to join room " << roomname << std::endl;
+                room_name_ = roomname;
             }
         },
         socket_
@@ -269,6 +270,7 @@ void ChatClient::handleRoomListMsg() {
 
 void ChatClient::handleChatMsg() {
     std::cout << getTimeString();
+    std::cout << "[" + room_name_ + "] ";
     outputMsgBody();
 }
 
@@ -305,9 +307,11 @@ void ChatClient::handleJoinMsg() {
             break;
         case 'N':
             std::cout << "[ CLIENT ] Cannot join room: doesn't exist" << std::endl;
+            room_name_ = "";
             break;
         case 'U':
             std::cout << "[ CLIENT ] Cannot join room: nick in use" << std::endl;
+            room_name_ = "";
             break;
         default:
             break;

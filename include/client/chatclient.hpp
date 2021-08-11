@@ -47,6 +47,7 @@ class ChatClient {
         tcp::socket socket_;
         std::string username_;
         std::string username_temp_;
+        std::string room_name_;
         bool checking_username_ = false;
         bool in_chatroom_ = false;
         boost::asio::io_context& io_context_;

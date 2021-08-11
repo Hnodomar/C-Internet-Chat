@@ -189,7 +189,6 @@ void ChatConnection::handleJoinRoomMsg() {
             if (chatroom_ != nullptr)
                 chatroom_->leave(shared_from_this());
             chatroom_ = (*chatroom_itr);
-            (*chatroom_itr)->join(shared_from_this());
             sendMsgToSocketNoQueue( //room exists and nick not in use
                 "Y",
                 'J',
@@ -199,6 +198,7 @@ void ChatConnection::handleJoinRoomMsg() {
                 },
                 socket_
             );
+            (*chatroom_itr)->join(shared_from_this());
         }
         else {
             sendMsgToSocketNoQueue( //room exists but nick in use

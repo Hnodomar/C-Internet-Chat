@@ -24,6 +24,8 @@ All commands are entered by the user pre-pended with a '/' character.
 
 * The client runs Boost ASIO's (asynchronous functionality) on a separate thread to the client interface.
 
+* The server features a logging functionality that allows an administrator to track usage/traffic across channels, and can be toggled between standard output and a logging file with flag '-log' on server start from the CLI.
+
 ## Dependencies
 
 * Boost 1.75 - set of C++ libraries; ASIO library used for networking https://www.boost.org/
