@@ -85,23 +85,16 @@ void ChatClient::askServerToCreateRoom(std::string& roomname) {
         std::cout << "[ CLIENT ] Invalid roomname" << std::endl;
         return;
     }
-    Message request_room_creation(
+    sendMsgToSocketNoQueue(
         roomname,
-        roomname.length(),
-        'C'
-    );
-    boost::asio::async_write(
-        socket_,
-        boost::asio::buffer(
-            request_room_creation.getMessagePacket(),
-            request_room_creation.getMsgPacketLen()
-        ),
+        'C',
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec)
                 std::cout << "[ CLIENT ] Requesting room creation by server" << std::endl; 
             else std::cout << "failed\n";
-        }
-    );  
+        },
+        socket_
+    );
 }
 
 void ChatClient::askServerForUserList() {
@@ -109,26 +102,28 @@ void ChatClient::askServerForUserList() {
         std::cout << "[ CLIENT ] cannot fetch users list when not in a chatroom" << std::endl;
         return;
     }
-    sendMsgToServer(
+    sendMsgToSocketNoQueue(
         "",
         'U',
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec)
                 std::cout << "[ CLIENT ] Requesting user list from server" << std::endl; 
             else std::cout << "failed\n";
-        }
+        },
+        socket_
     );
 }
 
 void ChatClient::askServerForRoomList() {
-    sendMsgToServer(
+    sendMsgToSocketNoQueue(
         "",
         'L',
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec)
                 std::cout << "[ CLIENT ] Requesting room list from server" << std::endl; 
             else std::cout << "failed\n";
-        }
+        },
+        socket_
     );
 }
 
@@ -140,7 +135,7 @@ void ChatClient::setClientNick(std::string nick) {
     else {
         username_temp_ = (nick + ": ");
         checking_username_ = true;
-        sendMsgToServer(
+        sendMsgToSocketNoQueue(
             nick,
             'N',
             [this](boost::system::error_code ec, std::size_t a) {
@@ -150,39 +145,22 @@ void ChatClient::setClientNick(std::string nick) {
                     checking_username_ = false;
                     username_temp_ = "";
                 }
-            }
+            },
+            socket_
         );
     }
 }
 
 void ChatClient::askServerToJoinRoom(std::string& roomname) {
-    sendMsgToServer(
+    sendMsgToSocketNoQueue(
         roomname,
         'J',
         [this, roomname](boost::system::error_code ec, std::size_t) {
             if (!ec) {
                 std::cout << "[ CLIENT ] Requesting to join room " << roomname << std::endl;
             }
-        }
-    );
-}
-
-void ChatClient::sendMsgToServer(
-    const std::string& body, 
-    char tag, 
-    const std::function<void(boost::system::error_code, std::size_t)>& handler) {
-    Message msg(
-        body,
-        body.length(),
-        tag
-    );
-    boost::asio::async_write(
-        socket_,
-        boost::asio::buffer(
-            msg.getMessagePacket(),
-            msg.getMsgPacketLen()
-        ),
-        handler  
+        },
+        socket_
     );
 }
 

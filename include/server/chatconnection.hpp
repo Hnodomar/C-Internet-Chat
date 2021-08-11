@@ -5,6 +5,7 @@
 #include <boost/asio.hpp>
 
 #include "chatroom.hpp"
+#include "util.hpp"
 #include "message.hpp"
 #include "chatuser.hpp"
 
@@ -29,7 +30,6 @@ class ChatConnection : public SharedConnection, public ChatUser {
         void handleListRoomsMsg();
         void handleListUsersMsg();
         void handleCreateRoomMsg();
-        void sendClientNotification(char type, char success);
         void sendClientRoomList();
         bool chatroomNameExists(std::string& name) const;
         std::string getChatroomNameList() const;

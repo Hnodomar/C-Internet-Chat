@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(Boost REQUIRED COMPONENTS iostreams system thread)
 
-file(GLOB server_sources "src/server/*.cpp" "src/message.cpp")
+file(GLOB server_sources "src/server/*.cpp" "src/message.cpp" "src/util.cpp")
 file(GLOB server_includes "include/server" "include")
 
 add_executable(server ${server_sources})

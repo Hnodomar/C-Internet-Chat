@@ -10,22 +10,15 @@ void ChatConnection::init() {
 
 void ChatConnection::sendClientRoomList() {
     std::string room_names(getChatroomNameList());
-    Message room_list(
+    sendMsgToSocketNoQueue(
         room_names,
-        room_names.length(),
-        'L'
-    );
-    boost::asio::async_write(
-        socket_,
-        boost::asio::buffer(
-            room_list.getMessagePacket(),
-            room_list.getMsgPacketLen()
-        ),
+        'L',
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec) {
-                std::cout << "Server: sent client chatroom list" << std::endl;
+                std::cout << "[ SERVER ]: sent client chatroom list" << std::endl;
             }
-        } 
+        },
+        socket_
     );
 }
 
@@ -96,9 +89,25 @@ void ChatConnection::handleCreateRoomMsg() {
         temp_msg_.getMessagePacketBodyLen()   
     );
     if (chatroomNameExists(new_room_name))
-        sendClientNotification('C', 'N');
+        sendMsgToSocketNoQueue(
+            "N",
+            'C',
+            [this](boost::system::error_code ec, std::size_t) {
+                if (!ec)
+                    std::cout << "[ SERVER ]: Notified client that room cannot be created: room exists" << std::endl;
+            },  
+            socket_
+        );
     else {
-        sendClientNotification('C', 'Y');
+        sendMsgToSocketNoQueue(
+            "Y",
+            'C',
+            [this](boost::system::error_code ec, std::size_t) {
+                if (!ec)
+                    std::cout << "[ SERVER ]: Notified client that room can be created" << std::endl;
+            },  
+            socket_
+        );
         getChatrooms().emplace(
             std::make_shared<ChatRoom>(
                 new_room_name
@@ -109,20 +118,13 @@ void ChatConnection::handleCreateRoomMsg() {
 
 void ChatConnection::handleListUsersMsg() {
     std::string user_list_str = getChatroomNicksList();
-    Message user_list(
+    sendMsgToSocketNoQueue(
         user_list_str,
-        user_list_str.length(),
-        'U'
-    );
-    boost::asio::async_write(
-        socket_,
-        boost::asio::buffer(
-            user_list.getMessagePacket(),
-            user_list.getMsgPacketLen()
-        ),
+        'U',
         [](boost::system::error_code ec, std::size_t) {
-            std::cout << "Server: sent client user list" << std::endl;
-        }
+            std::cout << "[ SERVER ]: sent client user list" << std::endl;
+        },
+        socket_
     );
 }
 
@@ -152,9 +154,27 @@ void ChatConnection::handleNickMsg() {
     }   
     if (nick_available) {
         strncpy(nick, nick_request, 10);
-        sendClientNotification('N', 'Y');
+        sendMsgToSocketNoQueue(
+            "Y",
+            'N',
+            [](boost::system::error_code ec, std::size_t) {
+                if (!ec)
+                    std::cout << "[ SERVER ]: Notified client that name change successful" << std::endl;
+            },
+            socket_
+        );
     }
-    else sendClientNotification('N', 'N');
+    else {
+        sendMsgToSocketNoQueue(
+            "N",
+            'N',
+            [](boost::system::error_code ec, std::size_t) {
+                if (!ec)
+                    std::cout << "[ SERVER ]: Notified client that name change unsuccessful" << std::endl;
+            },
+            socket_
+        );
+    }
 }
 
 void ChatConnection::handleJoinRoomMsg() {
@@ -171,32 +191,39 @@ void ChatConnection::handleJoinRoomMsg() {
                 chatroom_->leave(shared_from_this());
             chatroom_ = (*chatroom_itr);
             (*chatroom_itr)->join(shared_from_this());
-            sendClientNotification('J', 'Y'); //room exists and nick not in use
+            sendMsgToSocketNoQueue( //room exists and nick not in use
+                "Y",
+                'J',
+                [](boost::system::error_code ec, std::size_t) {
+                    if (!ec)
+                        std::cout << "[ SERVER ]: Notified client that room join successful" << std::endl;
+                },
+                socket_
+            );
         }
-        else sendClientNotification('J', 'U'); //room exists but nick in use
+        else {
+            sendMsgToSocketNoQueue( //room exists but nick in use
+                "U",
+                'J',
+                [](boost::system::error_code ec, std::size_t) {
+                    if (!ec)
+                        std::cout << "[ SERVER ]: Notified client that room join unsuccessful: name in use" << std::endl;
+                },
+                socket_
+            ); //room exists but nick in use
+        }
     }
     else {
-        sendClientNotification('J', 'N'); //room doesnt exist
+        sendMsgToSocketNoQueue( //room doesnt exist
+            "N",
+            'J',
+            [](boost::system::error_code ec, std::size_t) {
+                    if (!ec)
+                        std::cout << "[ SERVER ]: Notified client that room join unsuccessful: room doesnt exist" << std::endl;
+            },
+            socket_
+        );
     }
-}
-
-void ChatConnection::sendClientNotification(char type, char notification) {
-    Message notification_msg(
-        std::string(1, notification),
-        1,
-        type
-    );
-    boost::asio::async_write(
-        socket_,
-        boost::asio::buffer(
-            notification_msg.getMessagePacket(),
-            notification_msg.getMsgPacketLen()
-        ),
-        [this](boost::system::error_code ec, std::size_t) {
-            if (!ec)
-                std::cout << "Server: join room notification sent to client" << std::endl;
-        }
-    );
 }
 
 std::string ChatConnection::getChatroomNameList() const {
@@ -205,6 +232,7 @@ std::string ChatConnection::getChatroomNameList() const {
         list += chatroom->getRoomName();
         list += '\n';
     }
+    list.pop_back();
     return list;
 }
 
@@ -214,6 +242,7 @@ std::string ChatConnection::getChatroomNicksList() const {
         list += user_ptr->nick;
         list += '\n';
     }
+    list.pop_back();
     return list;
 }
 
