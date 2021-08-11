@@ -15,7 +15,7 @@ void ChatClient::initClient(const tcp::resolver::results_type& endpoints) {
         endpoints,
         [this](boost::system::error_code ec, tcp::endpoint) {
             if (!ec) {
-                std::cout << "Successfully connected to " 
+                std::cout << "[ CLIENT ] Successfully connected to " 
                     << socket_.remote_endpoint().address().to_string()
                     << std::endl;
                 readMsgHeader();
@@ -260,17 +260,38 @@ void ChatClient::handleCreateRoomMsg() {
 
 void ChatClient::handleUserListMsg() {
     std::cout << "[ CLIENT ] User List:\n";
-    outputMsgBody();
+    formatAndOutputList(false);
 }
 
 void ChatClient::handleRoomListMsg() {
     std::cout << "[ CLIENT ] Room List:\n";
-    outputMsgBody();
+    formatAndOutputList(true);
+}
+
+void ChatClient::formatAndOutputList(bool is_room_list) {
+     std::string list_str(
+        reinterpret_cast<char*>(
+            temp_msg_.getMessagePacketBody()
+        ),
+        temp_msg_.getMessagePacketBodyLen()
+    );
+    std::stringstream list_stream;
+    list_stream << list_str;
+    std::string temp;
+    std::string user_temp = username_.substr(0, username_.length() - 2);
+    while (getline(list_stream, temp, ' ')) {
+        std::cout << "- " << temp;
+        if (is_room_list && temp == room_name_)
+            std::cout << " *";
+        else if (!is_room_list && temp == user_temp)
+            std::cout << " *";
+        std::cout << std::endl;
+    }
 }
 
 void ChatClient::handleChatMsg() {
-    std::cout << getTimeString();
     std::cout << "[" + room_name_ + "] ";
+    std::cout << getTimeString();
     outputMsgBody();
 }
 

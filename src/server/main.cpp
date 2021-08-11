@@ -17,7 +17,6 @@ int main(int argc, char* argv[]) {
         tcp::endpoint endpoint(tcp::v4(), std::atoi(argv[1]));
         test.emplace_back(io_context, endpoint, output_to_file);
         io_context.run();
-        std::cout << "running\n";
     }
     catch (std::exception& e) {
         std::cerr << "Exception caught: " << e.what() << "\n";

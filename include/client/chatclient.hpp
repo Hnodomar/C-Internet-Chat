@@ -4,6 +4,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <deque>
@@ -42,6 +43,7 @@ class ChatClient {
         void handleUserListMsg();
         void handleCreateRoomMsg();
 
+        void formatAndOutputList(bool is_room_list);
         void outputMsgBody();
 
         tcp::socket socket_;

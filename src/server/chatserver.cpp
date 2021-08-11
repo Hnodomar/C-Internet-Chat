@@ -9,6 +9,7 @@ ChatServer::ChatServer(boost::asio::io_context& io_context,
                 "Lobby"
             )
         );
+        logger_.write("[ SERVER ]: Successfully setup server");
         acceptConnections();
     }
 
@@ -16,9 +17,8 @@ void ChatServer::acceptConnections() {
     acceptor_.async_accept(
         [this](boost::system::error_code ec, tcp::socket socket) {
             if (!ec) {
-                std::cout << "Client connected from " 
-                    << socket.remote_endpoint().address().to_string()
-                    << " \n";
+                logger_.write("[ SERVER ]: Client connected from "
+                    + socket.remote_endpoint().address().to_string());
                 std::make_shared<ChatConnection>(
                     std::move(socket), chatrooms_, logger_
                 )->init();

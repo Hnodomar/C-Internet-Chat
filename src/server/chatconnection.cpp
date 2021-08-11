@@ -134,6 +134,15 @@ void ChatConnection::handleListRoomsMsg() {
 void ChatConnection::handleChatMsg() {
     if (chatroom_ != nullptr)
         chatroom_->deliverMsgToUsers(temp_msg_);
+    logger_.write(
+        "[  USER  ] [" + chatroom_->getRoomName() + "]: " + 
+        std::string(
+            reinterpret_cast<char*>(
+                temp_msg_.getMessagePacketBody()
+            ),
+            temp_msg_.getMessagePacketBodyLen()
+        )
+    );
 }
 
 void ChatConnection::handleNickMsg() {
@@ -229,7 +238,7 @@ std::string ChatConnection::getChatroomNameList() const {
     std::string list;
     for (const auto& chatroom : chatrooms_set_) {
         list += chatroom->getRoomName();
-        list += '\n';
+        list += ' ';
     }
     list.pop_back();
     return list;
@@ -239,7 +248,7 @@ std::string ChatConnection::getChatroomNicksList() const {
     std::string list;
     for (const auto& user_ptr : chatroom_->getUsers()) {
         list += user_ptr->nick;
-        list += '\n';
+        list += ' ';
     }
     list.pop_back();
     return list;
@@ -275,15 +284,6 @@ void ChatConnection::writeMsgToClient() {
         ),
         [self, this](boost::system::error_code ec, std::size_t) {
             if (!ec) {
-                logger_.write(
-                    "[  USER  ] [" + chatroom_->getRoomName() + "]: " + 
-                    std::string(
-                        reinterpret_cast<char*>(
-                            msgs_to_send_client_.front().getMessagePacketBody()
-                        ),
-                        msgs_to_send_client_.front().getMessagePacketBodyLen()
-                    )
-                );
                 msgs_to_send_client_.pop_front();
                 if (!msgs_to_send_client_.empty())
                     writeMsgToClient();
