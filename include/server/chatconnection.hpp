@@ -8,6 +8,7 @@
 #include "util.hpp"
 #include "message.hpp"
 #include "chatuser.hpp"
+#include "logger.hpp"
 
 using boost::asio::ip::tcp;
 class ChatConnection;
@@ -16,7 +17,7 @@ typedef std::set<std::shared_ptr<ChatRoom>> chatrooms;
 
 class ChatConnection : public SharedConnection, public ChatUser {
     public:
-        ChatConnection(tcp::socket socket, chatrooms& chatrooms);
+        ChatConnection(tcp::socket socket, chatrooms& chatrooms, Logger& logger);
         void init();
         void deliverMsgToConnection(const Message& msg) override;
         chatrooms& getChatrooms() {return chatrooms_set_;}
@@ -40,6 +41,7 @@ class ChatConnection : public SharedConnection, public ChatUser {
         tcp::socket socket_;
         Message temp_msg_;
         std::deque<Message> msgs_to_send_client_;
+        Logger& logger_;
 };
 
 #endif

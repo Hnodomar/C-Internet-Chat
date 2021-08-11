@@ -22,6 +22,13 @@ std::string getTimeString() {
     }
 }
 
+std::string getDateTimeString() {
+    std::time_t now = time(0);
+    std::string time_date = ctime(&now);
+    time_date.pop_back();
+    return std::string( "[" + time_date + "] ");
+}
+
 void sendMsgToSocketNoQueue(
     const std::string& body, 
     char tag, 

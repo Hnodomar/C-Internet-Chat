@@ -8,6 +8,7 @@
 #include "message.hpp"
 
 std::string getTimeString();
+std::string getDateTimeString();
 void sendMsgToSocketNoQueue(
     const std::string& body, 
     char tag, 

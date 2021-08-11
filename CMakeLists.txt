@@ -14,6 +14,11 @@ add_executable(server ${server_sources})
 target_include_directories(server PUBLIC ${server_includes})
 target_link_libraries(server ${Boost_LIBRARIES})
 
+option(LOGFILE "Option to specify server logging to output file instead of stdout" OFF)
+if(LOGFILE)
+    target_compile_definitions(server PUBLIC LOGFILE)
+endif()
+
 file(GLOB client_sources "src/client/*.cpp" "src/message.cpp" "src/util.cpp")
 file(GLOB client_includes "include/client" "include")
 
