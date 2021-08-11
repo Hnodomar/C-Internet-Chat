@@ -13,10 +13,10 @@ void ChatRoom::join(chat_user_ptr user) {
 }
 
 void ChatRoom::leave(chat_user_ptr user) {
+    users_.erase(user);
     deliverMsgToUsers(
         LeaveMessage(user->nick)
     );
-    users_.erase(user);
 }
 
 void ChatRoom::deliverMsgToUsers(const Message& msg) {
