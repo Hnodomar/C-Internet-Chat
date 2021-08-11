@@ -203,7 +203,7 @@ std::string ChatConnection::getChatroomNameList() const {
     std::string list;
     for (const auto& chatroom : chatrooms_set_) {
         list += chatroom->getRoomName();
-        list += ' ';
+        list += '\n';
     }
     return list;
 }
@@ -212,7 +212,7 @@ std::string ChatConnection::getChatroomNicksList() const {
     std::string list;
     for (const auto& user_ptr : chatroom_->getUsers()) {
         list += user_ptr->nick;
-        list += ' ';
+        list += '\n';
     }
     return list;
 }

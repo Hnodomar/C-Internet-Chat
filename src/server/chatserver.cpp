@@ -9,6 +9,21 @@ ChatServer::ChatServer(boost::asio::io_context& io_context,
                 "Lobby"
             )
         );
+        chatrooms_.emplace(
+            std::make_shared<ChatRoom>(
+                "Lobby2"
+            )
+        );
+        chatrooms_.emplace(
+            std::make_shared<ChatRoom>(
+                "Lobby3"
+            )
+        );
+        chatrooms_.emplace(
+            std::make_shared<ChatRoom>(
+                "Lobby4"
+            )
+        );
         acceptConnections();
     }
 

@@ -44,6 +44,12 @@ class ChatClient {
 
         void outputMsgBody();
 
+        void sendMsgToServer(
+            const std::string& body, 
+            char tag, 
+            const std::function<void(boost::system::error_code, std::size_t)>& handler
+        );
+
         tcp::socket socket_;
         std::string username_;
         std::string username_temp_;
