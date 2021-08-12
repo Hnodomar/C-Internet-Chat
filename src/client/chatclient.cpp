@@ -35,6 +35,8 @@ void ChatClient::startInputLoop() {
         removeUserInput();
         if (user_input[0] == '/')
             interpretCommand(user_input);
+        else if (room_name_.empty())
+            std::cout << "[ CLIENT ] Please join a room first: /join <room>" << std::endl;
         else if (!username_.empty())
             constructMsg(user_input);
         else 
@@ -91,7 +93,11 @@ void ChatClient::askServerToCreateRoom(std::string& roomname) {
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec)
                 std::cout << "[ CLIENT ] Requesting room creation by server" << std::endl; 
-            else std::cout << "failed\n";
+            else {
+                std::cout << "[ CLIENT ] Failed to request room creation" << std::endl;
+                socket_.close();
+            } 
+                
         },
         socket_
     );
@@ -108,7 +114,10 @@ void ChatClient::askServerForUserList() {
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec)
                 std::cout << "[ CLIENT ] Requesting user list from server" << std::endl; 
-            else std::cout << "failed\n";
+            else {
+                std::cout << "[ CLIENT ] Failed to user list" << std::endl;
+                socket_.close();
+            } 
         },
         socket_
     );
@@ -121,7 +130,10 @@ void ChatClient::askServerForRoomList() {
         [this](boost::system::error_code ec, std::size_t) {
             if (!ec)
                 std::cout << "[ CLIENT ] Requesting room list from server" << std::endl; 
-            else std::cout << "failed\n";
+            else {
+                std::cout << "[ CLIENT ] Failed to request room list" << std::endl;
+                socket_.close();
+            } 
         },
         socket_
     );
@@ -144,6 +156,7 @@ void ChatClient::setClientNick(std::string nick) {
                     std::cout << "[ CLIENT ] Failed to request nick from server" << std::endl;
                     checking_username_ = false;
                     username_temp_ = "";
+                    socket_.close();
                 }
             },
             socket_
@@ -160,6 +173,10 @@ void ChatClient::askServerToJoinRoom(std::string& roomname) {
                 std::cout << "[ CLIENT ] Requesting to join room " << roomname << std::endl;
                 room_name_ = roomname;
             }
+            else {
+                std::cout << "[ CLIENT ] Failed to request join room" << std::endl;
+                socket_.close();
+            } 
         },
         socket_
     );
@@ -185,7 +202,7 @@ void ChatClient::writeMsgToServer() {
                 msg_queue_.pop_front();
                 if (!msg_queue_.empty()) writeMsgToServer();
             }
-            else closeSocket();
+            else socket_.close();
         }
     );
 }
@@ -201,7 +218,7 @@ void ChatClient::readMsgHeader() {
             if (!ec && temp_msg_.parseHeader()) {
                 readMsgBody();
             }
-            else closeSocket(); 
+            else socket_.close();
         }
     );
 }
@@ -239,7 +256,7 @@ void ChatClient::readMsgBody() {
                 }
                 readMsgHeader();
             }
-            else closeSocket();
+            else socket_.close();
         }
     );
 }
@@ -290,8 +307,8 @@ void ChatClient::formatAndOutputList(bool is_room_list) {
 }
 
 void ChatClient::handleChatMsg() {
-    std::cout << "[" + room_name_ + "] ";
     std::cout << getTimeString();
+    std::cout << "[" + room_name_ + "] ";
     outputMsgBody();
 }
 
@@ -337,10 +354,4 @@ void ChatClient::handleJoinMsg() {
         default:
             break;
     }
-}
-
-void ChatClient::closeSocket() {
-    boost::asio::post(io_context_, [this]() {
-        socket_.close();
-    });
 }

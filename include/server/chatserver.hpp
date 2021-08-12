@@ -4,7 +4,6 @@
 #include <set>
 #include <algorithm>
 #include <string>
-#include <iostream>
 #include <memory>
 #include <boost/asio.hpp>
 #include "chatconnection.hpp"
