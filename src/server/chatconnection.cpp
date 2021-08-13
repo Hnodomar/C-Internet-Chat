@@ -66,23 +66,35 @@ void ChatConnection::readMsgBody() {
     );
 }
 
-void ChatConnection::sendClientRoomList() {
-    std::string room_names(getChatroomNameList());
-    auto self = shared_from_this();
+void ChatConnection::sendMsgToClientNoQueue(
+    const std::string& success_msg, 
+    const std::string& fail_msg,
+    const std::string& body,
+    char type) {
+        auto self(shared_from_this());
     sendMsgToSocketNoQueue(
-        room_names,
-        'L',
-        [this, self](boost::system::error_code ec, std::size_t) {
-            if (!ec) {
-                logger_.write("[ SERVER ]: Successfully sent client chatroom list");
-            }
+        body,
+        type,
+        [this, self, &success_msg, &fail_msg](boost::system::error_code ec, std::size_t) {
+            if (!ec)
+                logger_.write(success_msg);
             else {
-                logger_.write("[ SERVER ]: Failed to send client chatroom list");
+                logger_.write(fail_msg);
                 if (chatroom_ != nullptr)
                     chatroom_->leave(self);
             }
         },
         socket_
+    );
+}
+
+void ChatConnection::sendClientRoomList() {
+    std::string room_names(getChatroomNameList());
+    sendMsgToClientNoQueue(
+        "[ SERVER ]: Successfully sent client chatroom list",
+        "[ SERVER ]: Failed to send client chatroom list",
+        room_names,
+        'L'
     );
 }
 
@@ -95,34 +107,18 @@ void ChatConnection::handleCreateRoomMsg() {
         temp_msg_.getMessagePacketBodyLen()   
     );
     if (chatroomNameExists(new_room_name))
-        sendMsgToSocketNoQueue(
+        sendMsgToClientNoQueue(
+            "[ SERVER ]: Notified client that room cannot be created: room exists",
+            "[ SERVER ]: Failed to notify client that room cannot be created due to existence",
             "N",
-            'C',
-            [this, self](boost::system::error_code ec, std::size_t) {
-                if (!ec)
-                    logger_.write("[ SERVER ]: Notified client that room cannot be created: room exists");
-                else {
-                    logger_.write("[ SERVER ]: Failed to notify client that room cannot be created due to existence");
-                    if (chatroom_ != nullptr)
-                        chatroom_->leave(self);
-                }
-            },  
-            socket_
+            'C'
         );
     else {
-        sendMsgToSocketNoQueue(
+        sendMsgToClientNoQueue(
+            "[ SERVER ]: Notified client that room can be created",
+            "[ SERVER ]: Failed to notify client that room can be created",
             "Y",
-            'C',
-            [this, self](boost::system::error_code ec, std::size_t) {
-                if (!ec)
-                    logger_.write("[ SERVER ]: Notified client that room can be created");
-                else {
-                    logger_.write("[ SERVER ]: Failed to notify client that room can be created");
-                    if (chatroom_ != nullptr)
-                        chatroom_->leave(self);
-                }
-            },  
-            socket_
+            'C'
         );
         getChatrooms().emplace(
             std::make_shared<ChatRoom>(
@@ -133,21 +129,11 @@ void ChatConnection::handleCreateRoomMsg() {
 }
 
 void ChatConnection::handleListUsersMsg() {
-    std::string user_list_str = getChatroomNicksList();
-    auto self = shared_from_this();
-    sendMsgToSocketNoQueue(
-        user_list_str,
-        'U',
-        [this, self](boost::system::error_code ec, std::size_t) {
-            if (!ec)
-                logger_.write("[ SERVER ]: Sent client user list");
-            else {
-                logger_.write("[ SERVER ]: Failed to send client user list");
-                if (chatroom_ != nullptr)
-                    chatroom_->leave(self);
-            }
-        },
-        socket_
+    sendMsgToClientNoQueue(
+        "[ SERVER ]: Sent client user list",
+        "[ SERVER ]: Failed to send client user list",
+        getChatroomNicksList(),
+        'U'
     );
 }
 
@@ -187,35 +173,19 @@ void ChatConnection::handleNickMsg() {
     }   
     if (nick_available) {
         strncpy(nick, nick_request, 10);
-        sendMsgToSocketNoQueue(
+        sendMsgToClientNoQueue(
+            "[ SERVER ]: Notified client that name change successful",
+            "[ SERVER ]: Failed to notify client that name change successful",
             "Y",
-            'N',
-            [this, self](boost::system::error_code ec, std::size_t) {
-                if (!ec)
-                    logger_.write("[ SERVER ]: Notified client that name change successful");
-                else {
-                    logger_.write("[ SERVER ]: Failed to notify client that name change successful");
-                    if (chatroom_ != nullptr)
-                        chatroom_->leave(self);
-                }
-            },
-            socket_
+            'N'
         );
     }
     else {
-        sendMsgToSocketNoQueue(
+        sendMsgToClientNoQueue(
+            "[ SERVER ]: Notified client that name change unsuccessful",
+            "[ SERVER ]: Failed to notify client that name change unsuccessful",
             "N",
-            'N',
-            [this, self](boost::system::error_code ec, std::size_t) {
-                if (!ec)
-                    logger_.write("[ SERVER ]: Notified client that name change unsuccessful");
-                else {
-                    logger_.write("[ SERVER ]: Failed to notify client that name change unsuccessful");
-                    if (chatroom_ != nullptr)
-                        chatroom_->leave(self);
-                }
-            },
-            socket_
+            'N'
         );
     }
 }
@@ -234,53 +204,29 @@ void ChatConnection::handleJoinRoomMsg() {
             if (chatroom_ != nullptr)
                 chatroom_->leave(self);
             chatroom_ = (*chatroom_itr);
-            sendMsgToSocketNoQueue( //room exists and nick not in use
+            sendMsgToClientNoQueue( //room exists nick not in use
+                "[ SERVER ]: Notified client that room join successful",
+                "[ SERVER ]: Failed to notify client that room join successful",
                 "Y",
-                'J',
-                [this, self](boost::system::error_code ec, std::size_t) {
-                    if (!ec)
-                        logger_.write("[ SERVER ]: Notified client that room join successful");
-                    else {
-                        logger_.write("[ SERVER ]: Failed to notify client that room join successful");
-                        if (chatroom_ != nullptr)
-                            chatroom_->leave(self);
-                    }
-                },
-                socket_
+                'J'
             );
             (*chatroom_itr)->join(self);
         }
         else {
-            sendMsgToSocketNoQueue( //room exists but nick in use
+            sendMsgToClientNoQueue(  //room exists but nick in use
+                "[ SERVER ]: Notified client that room join unsuccessful: name in use",
+                "[ SERVER ]: Failed to notify client that room join unsuccessful: name in use",
                 "U",
-                'J',
-                [this, self](boost::system::error_code ec, std::size_t) {
-                    if (!ec)
-                        logger_.write("[ SERVER ]: Notified client that room join unsuccessful: name in use");
-                    else {
-                        logger_.write("[ SERVER ]: Failed to notify client that room join unsuccessful: name in use");
-                        if (chatroom_ != nullptr)
-                            chatroom_->leave(self);
-                    }
-                },
-                socket_
-            ); //room exists but nick in use
+                'J'
+            );
         }
     }
     else {
-        sendMsgToSocketNoQueue( //room doesnt exist
+        sendMsgToClientNoQueue( //room doesnt exist
+            "[ SERVER ]: Notified client that room join unsuccessful: room doesnt exist",
+            "[ SERVER ]: Failed to notify client that room join unsuccessful: room doesnt exist",
             "N",
-            'J',
-            [this, self](boost::system::error_code ec, std::size_t) {
-                    if (!ec)
-                        logger_.write("[ SERVER ]: Notified client that room join unsuccessful: room doesnt exist");
-                    else {
-                        logger_.write("[ SERVER ]: Failed to notify client that room join unsuccessful: room doesnt exist");
-                        if (chatroom_ != nullptr)
-                            chatroom_->leave(self);
-                    }
-            },
-            socket_
+            'J'
         );
     }
 }

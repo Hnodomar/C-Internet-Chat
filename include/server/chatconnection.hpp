@@ -32,6 +32,12 @@ class ChatConnection : public SharedConnection, public ChatUser {
         void handleListUsersMsg();
         void handleCreateRoomMsg();
         void sendClientRoomList();
+        void sendMsgToClientNoQueue(
+            const std::string& success_msg, 
+            const std::string& fail_msg,
+            const std::string& body,
+            char type
+        );
         bool chatroomNameExists(std::string& name) const;
         std::string getChatroomNameList() const;
         std::string getChatroomNicksList() const;
