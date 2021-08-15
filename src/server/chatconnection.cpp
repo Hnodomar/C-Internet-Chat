@@ -71,7 +71,7 @@ void ChatConnection::sendMsgToClientNoQueue(
     const std::string& fail_msg,
     const std::string& body,
     char type) {
-        auto self(shared_from_this());
+    auto self(shared_from_this());
     sendMsgToSocketNoQueue(
         body,
         type,
@@ -88,18 +88,7 @@ void ChatConnection::sendMsgToClientNoQueue(
     );
 }
 
-void ChatConnection::sendClientRoomList() {
-    std::string room_names(getChatroomNameList());
-    sendMsgToClientNoQueue(
-        "[ SERVER ]: Successfully sent client chatroom list",
-        "[ SERVER ]: Failed to send client chatroom list",
-        room_names,
-        'L'
-    );
-}
-
 void ChatConnection::handleCreateRoomMsg() {
-    auto self = shared_from_this();
     std::string new_room_name(
         reinterpret_cast<char*>(
             temp_msg_.getMessagePacketBody()
@@ -138,7 +127,12 @@ void ChatConnection::handleListUsersMsg() {
 }
 
 void ChatConnection::handleListRoomsMsg() {
-    sendClientRoomList();
+    sendMsgToClientNoQueue(
+        "[ SERVER ]: Successfully sent client chatroom list",
+        "[ SERVER ]: Failed to send client chatroom list",
+        getChatroomNameList(),
+        'L'
+    );
 }
 
 void ChatConnection::handleChatMsg() {
@@ -156,7 +150,6 @@ void ChatConnection::handleChatMsg() {
 }
 
 void ChatConnection::handleNickMsg() {
-    auto self = shared_from_this();
     char nick_request[10] = "";
     memcpy(
         nick_request, 
