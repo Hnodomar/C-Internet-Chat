@@ -6,6 +6,8 @@
 #include <string>
 #include <memory>
 #include <boost/asio.hpp>
+#include <boost/thread/thread.hpp>
+
 #include "chatconnection.hpp"
 #include "chatroom.hpp"
 #include "logger.hpp"
@@ -14,12 +16,15 @@ using boost::asio::ip::tcp;
 
 class ChatServer {
     public:
-        ChatServer(boost::asio::io_context& io_context,
-                   const tcp::endpoint& endpoint,
-                   bool output_to_file);
+        ChatServer(
+            const tcp::endpoint& endpoint, bool output_to_file);
+        ~ChatServer();
     private:
         void acceptConnections();
         tcp::acceptor acceptor_;
+        boost::thread_group thrds_async;
+        boost::asio::io_context io_context;
+        std::unique_ptr<boost::asio::io_context::work> work;
         std::set<std::shared_ptr<ChatRoom>> chatrooms_;
         Logger logger_;
 };

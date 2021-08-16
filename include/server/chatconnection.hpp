@@ -14,10 +14,16 @@ using boost::asio::ip::tcp;
 class ChatConnection;
 typedef std::enable_shared_from_this<ChatConnection> SharedConnection;
 typedef std::set<std::shared_ptr<ChatRoom>> chatrooms;
+typedef boost::asio::strand<boost::asio::io_context::executor_type> connection_strand;
 
 class ChatConnection : public SharedConnection, public ChatUser {
     public:
-        ChatConnection(tcp::socket socket, chatrooms& chatrooms, Logger& logger);
+        ChatConnection(
+            tcp::socket socket, 
+            chatrooms& chatrooms, 
+            Logger& logger,
+            connection_strand strand
+        );
         void init();
         void deliverMsgToConnection(const Message& msg) override;
         chatrooms& getChatrooms() {return chatrooms_set_;}
@@ -47,6 +53,7 @@ class ChatConnection : public SharedConnection, public ChatUser {
         Message temp_msg_;
         std::deque<Message> msgs_to_send_client_;
         Logger& logger_;
+        connection_strand strand_;
 };
 
 #endif

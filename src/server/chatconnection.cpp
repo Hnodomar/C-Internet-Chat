@@ -1,7 +1,16 @@
 #include "chatconnection.hpp"
 
-ChatConnection::ChatConnection(tcp::socket socket, chatrooms& chat_rooms, Logger& logger):
-    socket_(std::move(socket)), chatrooms_set_(chat_rooms), logger_(logger) {}
+ChatConnection::ChatConnection(
+    tcp::socket socket, 
+    chatrooms& chat_rooms, 
+    Logger& logger,
+    connection_strand strand
+    ): 
+    strand_(strand),
+    socket_(std::move(socket)), 
+    chatrooms_set_(chat_rooms), 
+    logger_(logger) 
+{}
 
 void ChatConnection::init() {
     readMsgHeader();
@@ -75,11 +84,16 @@ void ChatConnection::sendMsgToClientNoQueue(
     sendMsgToSocketNoQueue(
         body,
         type,
-        [this, self, &success_msg, &fail_msg](boost::system::error_code ec, std::size_t) {
+        [
+         this, 
+         self, 
+         success_msg = std::move(success_msg), 
+         fail_msg = std::move(fail_msg)
+         ](boost::system::error_code ec, std::size_t) {
             if (!ec)
-                logger_.write(success_msg);
+                self->logger_.write(success_msg);
             else {
-                logger_.write(fail_msg);
+                self->logger_.write(fail_msg);
                 if (chatroom_ != nullptr)
                     chatroom_->leave(self);
             }

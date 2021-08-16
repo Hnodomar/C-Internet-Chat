@@ -15,8 +15,7 @@ int main(int argc, char* argv[]) {
         boost::asio::io_context io_context;
         std::list<ChatServer> test;
         tcp::endpoint endpoint(tcp::v4(), std::atoi(argv[1]));
-        test.emplace_back(io_context, endpoint, output_to_file);
-        io_context.run();
+        test.emplace_back(endpoint, output_to_file);
     }
     catch (std::exception& e) {
         std::cerr << "Exception caught: " << e.what() << "\n";
