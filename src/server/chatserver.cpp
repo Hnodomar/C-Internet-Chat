@@ -1,7 +1,8 @@
 #include "chatserver.hpp"
 
 ChatServer::ChatServer(const tcp::endpoint& endpoint, bool output_to_file)
-    : acceptor_(io_context, endpoint), logger_(output_to_file)
+    : acceptor_(io_context, endpoint), 
+      logger_(output_to_file, std::move(boost::asio::make_strand(io_context)))
     {
         chatrooms_.emplace(
             std::make_shared<ChatRoom>(
@@ -16,6 +17,7 @@ ChatServer::ChatServer(const tcp::endpoint& endpoint, bool output_to_file)
             );
         acceptConnections();
     }
+
 ChatServer::~ChatServer() {
     work.reset();
     thrds_async.join_all();
@@ -27,14 +29,17 @@ void ChatServer::acceptConnections() {
             if (!ec) {
                 logger_.write("[ SERVER ]: Client connected from "
                     + socket.remote_endpoint().address().to_string());
+                id_counter_mutex_.lock();
                 std::make_shared<ChatConnection>(
                     std::move(socket), 
                     chatrooms_, 
                     logger_,
                     std::move(
                         boost::asio::make_strand(io_context)
-                    )
+                    ),
+                    ++conn_id_counter_
                 )->init();
+                id_counter_mutex_.unlock();
             }                
             acceptConnections();
         }

@@ -4,12 +4,14 @@ ChatConnection::ChatConnection(
     tcp::socket socket, 
     chatrooms& chat_rooms, 
     Logger& logger,
-    connection_strand strand
+    connection_strand strand,
+    uint16_t conn_id
     ): 
-    strand_(strand),
+    strand_(std::move(strand)),
     socket_(std::move(socket)), 
     chatrooms_set_(chat_rooms), 
-    logger_(logger) 
+    logger_(logger),
+    conn_id_(conn_id) 
 {}
 
 void ChatConnection::init() {
@@ -43,29 +45,14 @@ void ChatConnection::readMsgBody() {
         ),
         [this, self](boost::system::error_code ec, std::size_t) {
             if (!ec) {
-                switch(temp_msg_.type()) {
-                    case 'M':
-                        handleChatMsg();
-                        break;
-                    case 'N':
-                        handleNickMsg();
-                        break;
-                    case 'J':
-                        handleJoinRoomMsg();
-                        break;
-                    case 'L':
-                        handleListRoomsMsg();
-                        break;
-                    case 'U':
-                        handleListUsersMsg();
-                        break;
-                    case 'C':
-                        handleCreateRoomMsg();
-                        break;
-                    default:
-                        break;
-                }
-                readMsgHeader();
+                boost::asio::post(
+                    boost::asio::bind_executor(
+                        strand_,
+                        boost::bind(
+                            &ChatConnection::handleMsgBody, this
+                        )
+                    )
+                );
             }
             else {
                 if (chatroom_ != nullptr)
@@ -73,6 +60,32 @@ void ChatConnection::readMsgBody() {
             }
         }
     );
+}
+
+void ChatConnection::handleMsgBody() {
+    switch(temp_msg_.type()) {
+        case 'M':
+            handleChatMsg();
+            break;
+        case 'N':
+            handleNickMsg();
+            break;
+        case 'J':
+            handleJoinRoomMsg();
+            break;
+        case 'L':
+            handleListRoomsMsg();
+            break;
+        case 'U':
+            handleListUsersMsg();
+            break;
+        case 'C':
+            handleCreateRoomMsg();
+            break;
+        default:
+            break;
+    }
+    readMsgHeader();
 }
 
 void ChatConnection::sendMsgToClientNoQueue(
@@ -150,8 +163,6 @@ void ChatConnection::handleListRoomsMsg() {
 }
 
 void ChatConnection::handleChatMsg() {
-    if (chatroom_ != nullptr)
-        chatroom_->deliverMsgToUsers(temp_msg_);
     logger_.write(
         "[  USER  ] [" + chatroom_->getRoomName() + "]: " + 
         std::string(
@@ -161,6 +172,8 @@ void ChatConnection::handleChatMsg() {
             temp_msg_.getMessagePacketBodyLen()
         )
     );
+    if (chatroom_ != nullptr)
+        chatroom_->deliverMsgToUsers(temp_msg_);
 }
 
 void ChatConnection::handleNickMsg() {
@@ -172,7 +185,14 @@ void ChatConnection::handleNickMsg() {
     );
     bool nick_available = true;
     if (chatroom_ != nullptr) { //client is member of a chatroom
-        nick_available = chatroom_->nickAvailable(nick_request);
+        {
+            std::unique_lock<boost::fibers::mutex> nick_find(chatroom_->nick_mtx);
+            while (!chatroom_->nick_available_finished
+                && chatroom_->latestID != conn_id_) {
+                chatroom_->nick_cond.wait(nick_find);
+            }
+        }
+        nick_available = chatroom_->nickAvailable(nick_request, conn_id_);
         if (nick_available) 
             chatroom_->deliverMsgToUsers(
                 NickChange(nick, nick_request)
@@ -207,7 +227,7 @@ void ChatConnection::handleJoinRoomMsg() {
     );
     auto chatroom_itr = getChatroomItrFromName(room_name);
     if (chatroom_itr != chatrooms_set_.end()) {
-        if ((*chatroom_itr)->nickAvailable(nick)) {
+        if ((*chatroom_itr)->nickAvailable(nick, conn_id_)) {
             if (chatroom_ != nullptr)
                 chatroom_->leave(self);
             chatroom_ = (*chatroom_itr);

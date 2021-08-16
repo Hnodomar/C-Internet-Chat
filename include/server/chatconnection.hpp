@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <boost/asio.hpp>
+#include <boost/thread/thread.hpp>
 
 #include "chatroom.hpp"
 #include "util.hpp"
@@ -22,7 +23,8 @@ class ChatConnection : public SharedConnection, public ChatUser {
             tcp::socket socket, 
             chatrooms& chatrooms, 
             Logger& logger,
-            connection_strand strand
+            connection_strand strand,
+            uint16_t conn_id
         );
         void init();
         void deliverMsgToConnection(const Message& msg) override;
@@ -30,6 +32,7 @@ class ChatConnection : public SharedConnection, public ChatUser {
     private:
         void readMsgHeader();
         void readMsgBody();
+        void handleMsgBody();
         void writeMsgToClient();
         void handleChatMsg();
         void handleJoinRoomMsg();
@@ -54,6 +57,7 @@ class ChatConnection : public SharedConnection, public ChatUser {
         std::deque<Message> msgs_to_send_client_;
         Logger& logger_;
         connection_strand strand_;
+        uint16_t conn_id_;
 };
 
 #endif
