@@ -183,22 +183,10 @@ void ChatConnection::handleNickMsg() {
         temp_msg_.getMessagePacketBody(), 
         temp_msg_.getMessagePacketBodyLen()
     );
-    bool nick_available = true;
-    if (chatroom_ != nullptr) { //client is member of a chatroom
-        {
-            std::unique_lock<boost::fibers::mutex> nick_find(chatroom_->nick_mtx);
-            while (!chatroom_->nick_available_finished
-                && chatroom_->latestID != conn_id_) {
-                chatroom_->nick_cond.wait(nick_find);
-            }
-        }
-        nick_available = chatroom_->nickAvailable(nick_request, conn_id_);
-        if (nick_available) 
-            chatroom_->deliverMsgToUsers(
-                NickChange(nick, nick_request)
-            );
-    }   
-    if (nick_available) {
+    if (chatroom_ == nullptr || chatroom_->nickAvailable(nick_request)) {
+        chatroom_->deliverMsgToUsers(
+            NickChange(nick, nick_request)
+        );
         strncpy(nick, nick_request, 10);
         sendMsgToClientNoQueue(
             "[ SERVER ]: Notified client that name change successful",
@@ -227,7 +215,7 @@ void ChatConnection::handleJoinRoomMsg() {
     );
     auto chatroom_itr = getChatroomItrFromName(room_name);
     if (chatroom_itr != chatrooms_set_.end()) {
-        if ((*chatroom_itr)->nickAvailable(nick, conn_id_)) {
+        if ((*chatroom_itr)->nickAvailable(nick)) {
             if (chatroom_ != nullptr)
                 chatroom_->leave(self);
             chatroom_ = (*chatroom_itr);

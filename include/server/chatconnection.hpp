@@ -2,6 +2,7 @@
 #define CHAT_CONNECTION_HPP
 
 #include <memory>
+#include <atomic>
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
 
