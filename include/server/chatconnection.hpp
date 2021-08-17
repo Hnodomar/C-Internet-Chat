@@ -28,13 +28,12 @@ class ChatConnection : public SharedConnection, public ChatUser {
             std::mutex& chatroom_set_mutex
         );
         void init();
-        void deliverMsgToConnection(const Message& msg) override;
+        void writeMsgToClient(const Message& msg) override;
         chatrooms& getChatrooms() {return chatrooms_set_;}
     private:
         void readMsgHeader();
         void readMsgBody();
         void handleMsgBody();
-        void writeMsgToClient();
         void handleChatMsg();
         void handleJoinRoomMsg();
         void handleNickMsg();
@@ -54,6 +53,7 @@ class ChatConnection : public SharedConnection, public ChatUser {
         chatrooms& chatrooms_set_;
         std::shared_ptr<ChatRoom> chatroom_;
         std::mutex& chatroom_set_mutex_;
+        std::mutex msg_queue_mutex_;
         tcp::socket socket_;
         Message temp_msg_;
         std::deque<Message> msgs_to_send_client_;

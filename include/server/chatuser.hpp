@@ -7,7 +7,7 @@
 class ChatUser {
     public:
         virtual ~ChatUser() {}
-        virtual void deliverMsgToConnection(const Message& msg) = 0;
+        virtual void writeMsgToClient(const Message& msg) = 0;
         char nick[10];
 };
 

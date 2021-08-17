@@ -158,6 +158,7 @@ void ChatConnection::handleChatMsg() {
     );
     if (chatroom_ != nullptr)
         chatroom_->deliverMsgToUsers(temp_msg_);
+    readMsgHeader();
 }
 
 void ChatConnection::handleNickMsg() {
@@ -262,33 +263,19 @@ bool ChatConnection::chatroomNameExists(std::string& name) {
     return !(getChatroomItrFromName(name) == chatrooms_set_.end());
 }
 
-void ChatConnection::deliverMsgToConnection(const Message& msg) {
-    bool already_delivering = !msgs_to_send_client_.empty();
-    msgs_to_send_client_.push_back(msg);
-    if (!already_delivering) writeMsgToClient();
-}
-
-void ChatConnection::writeMsgToClient() {
+void ChatConnection::writeMsgToClient(const Message& msg) {
     auto self(shared_from_this());
+    Message temp = msg;
     boost::asio::async_write(
         socket_,
         boost::asio::buffer(
-            msgs_to_send_client_.front().getMessagePacket(),
-            msgs_to_send_client_.front().getMsgPacketLen() 
+            temp.getMessagePacket(),
+            temp.getMsgPacketLen()
         ),
-        [self, this](boost::system::error_code ec, std::size_t) {
-            if (!ec) {
-                bool sent_by_client = msgs_to_send_client_.front().sentByClient();
-                msgs_to_send_client_.pop_front();
-                if (!msgs_to_send_client_.empty())
-                    writeMsgToClient();
-                else if (sent_by_client)
-                    readMsgHeader();
-            }
-            else {
-                if (chatroom_ != nullptr) 
+        [this, self](boost::system::error_code ec, std::size_t) {
+            if (ec)
+                if (chatroom_ != nullptr)
                     chatroom_->leave(self);
-            }
         }
     );
 }

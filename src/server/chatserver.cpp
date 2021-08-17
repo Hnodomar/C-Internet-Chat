@@ -4,7 +4,6 @@ ChatServer::ChatServer(char* port, bool output_to_file)
     : acceptor_(io_context, tcp::endpoint(tcp::v4(), std::atoi(port))), 
       logger_(output_to_file, std::move(boost::asio::make_strand(io_context)))
     {
-        std::cout << "got this far\n";
         chatrooms_.emplace(
             std::make_shared<ChatRoom>(
                 "Lobby"
