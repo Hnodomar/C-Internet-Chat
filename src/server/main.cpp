@@ -13,8 +13,7 @@ int main(int argc, char* argv[]) {
         if (argc > 2)
             output_to_file = !strcmp(argv[2], "-log") ? true : false;
         std::list<ChatServer> test;
-        tcp::endpoint endpoint(tcp::v4(), std::atoi(argv[1]));
-        test.emplace_back(endpoint, output_to_file);
+        test.emplace_back(argv[1], output_to_file);
     }
     catch (std::exception& e) {
         std::cerr << "Exception caught: " << e.what() << "\n";

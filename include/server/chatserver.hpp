@@ -17,18 +17,16 @@ using boost::asio::ip::tcp;
 
 class ChatServer {
     public:
-        ChatServer(const tcp::endpoint& endpoint, bool output_to_file);
+        ChatServer(char* port, bool output_to_file);
         ~ChatServer();
     private:
         void acceptConnections();
+        boost::asio::io_context io_context;
         tcp::acceptor acceptor_;
         boost::thread_group thrds_async;
-        boost::asio::io_context io_context;
         std::unique_ptr<boost::asio::io_context::work> work;
         std::set<std::shared_ptr<ChatRoom>> chatrooms_;
         Logger logger_;
-        uint16_t conn_id_counter_ = 0;
-        std::mutex id_counter_mutex_;
 };
 
 #endif

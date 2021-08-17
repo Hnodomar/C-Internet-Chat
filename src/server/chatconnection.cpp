@@ -4,14 +4,12 @@ ChatConnection::ChatConnection(
     tcp::socket socket, 
     chatrooms& chat_rooms, 
     Logger& logger,
-    connection_strand strand,
-    uint16_t conn_id
+    connection_strand strand
     ): 
     strand_(std::move(strand)),
     socket_(std::move(socket)), 
     chatrooms_set_(chat_rooms), 
-    logger_(logger),
-    conn_id_(conn_id) 
+    logger_(logger)
 {}
 
 void ChatConnection::init() {
@@ -45,14 +43,28 @@ void ChatConnection::readMsgBody() {
         ),
         [this, self](boost::system::error_code ec, std::size_t) {
             if (!ec) {
-                boost::asio::post(
-                    boost::asio::bind_executor(
-                        strand_,
-                        boost::bind(
-                            &ChatConnection::handleMsgBody, this
-                        )
-                    )
-                );
+                switch(temp_msg_.type()) {
+                    case 'M':
+                        handleChatMsg();
+                        break;
+                    case 'N':
+                        handleNickMsg();
+                        break;
+                    case 'J':
+                        handleJoinRoomMsg();
+                        break;
+                    case 'L':
+                        handleListRoomsMsg();
+                        break;
+                    case 'U':
+                        handleListUsersMsg();
+                        break;
+                    case 'C':
+                        handleCreateRoomMsg();
+                        break;
+                    default:
+                        break;
+                }
             }
             else {
                 if (chatroom_ != nullptr)
@@ -62,54 +74,24 @@ void ChatConnection::readMsgBody() {
     );
 }
 
-void ChatConnection::handleMsgBody() {
-    switch(temp_msg_.type()) {
-        case 'M':
-            handleChatMsg();
-            break;
-        case 'N':
-            handleNickMsg();
-            break;
-        case 'J':
-            handleJoinRoomMsg();
-            break;
-        case 'L':
-            handleListRoomsMsg();
-            break;
-        case 'U':
-            handleListUsersMsg();
-            break;
-        case 'C':
-            handleCreateRoomMsg();
-            break;
-        default:
-            break;
-    }
-    readMsgHeader();
-}
-
 void ChatConnection::sendMsgToClientNoQueue(
     const std::string& success_msg, 
     const std::string& fail_msg,
     const std::string& body,
     char type) {
-    auto self(shared_from_this());
     sendMsgToSocketNoQueue(
         body,
         type,
-        [
-         this, 
-         self, 
-         success_msg = std::move(success_msg), 
-         fail_msg = std::move(fail_msg)
-         ](boost::system::error_code ec, std::size_t) {
+        [this, success_msg, fail_msg, self=shared_from_this()](boost::system::error_code ec, std::size_t) {
             if (!ec)
                 self->logger_.write(success_msg);
             else {
+                std::cout << ec.message() << std::endl;
                 self->logger_.write(fail_msg);
                 if (chatroom_ != nullptr)
                     chatroom_->leave(self);
             }
+            self->readMsgHeader();
         },
         socket_
     );
@@ -130,6 +112,7 @@ void ChatConnection::handleCreateRoomMsg() {
             'C'
         );
     else {
+        std::lock_guard<std::mutex> lock(chatroom_list_mutex_);
         sendMsgToClientNoQueue(
             "[ SERVER ]: Notified client that room can be created",
             "[ SERVER ]: Failed to notify client that room can be created",
@@ -184,9 +167,10 @@ void ChatConnection::handleNickMsg() {
         temp_msg_.getMessagePacketBodyLen()
     );
     if (chatroom_ == nullptr || chatroom_->nickAvailable(nick_request)) {
-        chatroom_->deliverMsgToUsers(
-            NickChange(nick, nick_request)
-        );
+        if (chatroom_ != nullptr)
+            chatroom_->deliverMsgToUsers(
+                NickChange(nick, nick_request)
+            );
         strncpy(nick, nick_request, 10);
         sendMsgToClientNoQueue(
             "[ SERVER ]: Notified client that name change successful",
@@ -247,6 +231,7 @@ void ChatConnection::handleJoinRoomMsg() {
 }
 
 std::string ChatConnection::getChatroomNameList() const {
+    std::lock_guard<std::mutex> lock(chatroom_->getChatroomMutex());
     std::string list;
     for (const auto& chatroom : chatrooms_set_) {
         list += chatroom->getRoomName();
@@ -257,6 +242,7 @@ std::string ChatConnection::getChatroomNameList() const {
 }
 
 std::string ChatConnection::getChatroomNicksList() const {
+    std::lock_guard<std::mutex> lock(chatroom_->getChatroomMutex());
     std::string list;
     for (const auto& user_ptr : chatroom_->getUsers()) {
         list += user_ptr->nick;
@@ -266,7 +252,8 @@ std::string ChatConnection::getChatroomNicksList() const {
     return list;
 }
 
-chatrooms::iterator ChatConnection::getChatroomItrFromName(std::string& name) const {
+chatrooms::iterator ChatConnection::getChatroomItrFromName(std::string& name) {
+    const std::lock_guard<std::mutex> lock(chatroom_list_mutex_);
     return std::find_if(
         chatrooms_set_.begin(),
         chatrooms_set_.end(),
@@ -276,18 +263,24 @@ chatrooms::iterator ChatConnection::getChatroomItrFromName(std::string& name) co
     );
 }
 
-bool ChatConnection::chatroomNameExists(std::string& name) const {
+bool ChatConnection::chatroomNameExists(std::string& name) {
+    const std::lock_guard<std::mutex> lock(chatroom_list_mutex_);
     return !(getChatroomItrFromName(name) == chatrooms_set_.end());
 }
 
 void ChatConnection::deliverMsgToConnection(const Message& msg) {
+    std::cout << "got here VVV\n";
     bool already_delivering = !msgs_to_send_client_.empty();
+    std::cout << "got here VVV\n";
     msgs_to_send_client_.push_back(msg);
+    std::cout << "got here VVV\n";
     if (!already_delivering) writeMsgToClient();
 }
 
 void ChatConnection::writeMsgToClient() {
+    std::cout << "got here VVV\n";
     auto self(shared_from_this());
+    std::cout << "got here VVV\n";
     boost::asio::async_write(
         socket_,
         boost::asio::buffer(

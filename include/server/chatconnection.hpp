@@ -2,7 +2,7 @@
 #define CHAT_CONNECTION_HPP
 
 #include <memory>
-#include <atomic>
+#include <mutex>
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
 
@@ -24,8 +24,7 @@ class ChatConnection : public SharedConnection, public ChatUser {
             tcp::socket socket, 
             chatrooms& chatrooms, 
             Logger& logger,
-            connection_strand strand,
-            uint16_t conn_id
+            connection_strand strand
         );
         void init();
         void deliverMsgToConnection(const Message& msg) override;
@@ -47,18 +46,18 @@ class ChatConnection : public SharedConnection, public ChatUser {
             const std::string& body,
             char type
         );
-        bool chatroomNameExists(std::string& name) const;
+        bool chatroomNameExists(std::string& name);
         std::string getChatroomNameList() const;
         std::string getChatroomNicksList() const;
-        chatrooms::iterator getChatroomItrFromName(std::string& name) const;
+        chatrooms::iterator getChatroomItrFromName(std::string& name);
         chatrooms& chatrooms_set_;
         std::shared_ptr<ChatRoom> chatroom_;
+        std::mutex chatroom_list_mutex_;
         tcp::socket socket_;
         Message temp_msg_;
         std::deque<Message> msgs_to_send_client_;
         Logger& logger_;
         connection_strand strand_;
-        uint16_t conn_id_;
 };
 
 #endif

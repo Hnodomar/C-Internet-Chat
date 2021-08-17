@@ -1,14 +1,16 @@
 #include "chatserver.hpp"
 
-ChatServer::ChatServer(const tcp::endpoint& endpoint, bool output_to_file)
-    : acceptor_(io_context, endpoint), 
+ChatServer::ChatServer(char* port, bool output_to_file)
+    : acceptor_(io_context, tcp::endpoint(tcp::v4(), std::atoi(port))), 
       logger_(output_to_file, std::move(boost::asio::make_strand(io_context)))
     {
+        std::cout << "got this far\n";
         chatrooms_.emplace(
             std::make_shared<ChatRoom>(
                 "Lobby"
             )
         );
+
         logger_.write("[ SERVER ]: Successfully setup server");
         work = std::make_unique<boost::asio::io_context::work>(io_context);
         for (int i = 0; i < boost::thread::hardware_concurrency() - 1; ++i)
@@ -29,17 +31,14 @@ void ChatServer::acceptConnections() {
             if (!ec) {
                 logger_.write("[ SERVER ]: Client connected from "
                     + socket.remote_endpoint().address().to_string());
-                id_counter_mutex_.lock();
                 std::make_shared<ChatConnection>(
                     std::move(socket), 
                     chatrooms_, 
                     logger_,
                     std::move(
                         boost::asio::make_strand(io_context)
-                    ),
-                    ++conn_id_counter_
+                    )
                 )->init();
-                id_counter_mutex_.unlock();
             }                
             acceptConnections();
         }

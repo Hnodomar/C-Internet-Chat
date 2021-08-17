@@ -13,7 +13,7 @@
 #include "messagetypes.hpp"
 #include "chatuser.hpp"
 
-constexpr uint8_t max_cache_msgs = 100;
+constexpr std::size_t max_cache_msgs = 100;
 
 class ChatRoom {
     public:
@@ -24,6 +24,7 @@ class ChatRoom {
         bool nickAvailable(char* nick_request);
         std::string getRoomName() {return room_name_;}
         std::set<chat_user_ptr>& getUsers(){return users_;}
+        std::mutex& getChatroomMutex(){return chatroom_mutex_;}
     private:
         std::mutex chatroom_mutex_;
         const std::string room_name_;

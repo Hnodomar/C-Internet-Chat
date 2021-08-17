@@ -24,7 +24,7 @@ class Logger {
             );
         }
     private:
-        void output(const std::string&& output) { //all output is sequential
+        void output(std::string output) { //all output is sequential
             if (output_to_file) {
                 std::ofstream output_file;
                 output_file.open("serverlog.txt", std::ios::app);
