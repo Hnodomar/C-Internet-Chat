@@ -29,3 +29,4 @@ All commands are entered by the user pre-pended with a '/' character.
 ## Dependencies
 
 * Boost 1.75 - set of C++ libraries; ASIO library used for networking https://www.boost.org/
+* CMake 3.16 - open source cross-platform build system https://cmake.org/
