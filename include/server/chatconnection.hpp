@@ -24,7 +24,6 @@ class ChatConnection : public SharedConnection, public ChatUser {
             tcp::socket socket, 
             chatrooms& chatrooms, 
             Logger& logger,
-            connection_strand strand,
             std::mutex& chatroom_set_mutex
         );
         void init();
@@ -56,9 +55,7 @@ class ChatConnection : public SharedConnection, public ChatUser {
         std::mutex msg_queue_mutex_;
         tcp::socket socket_;
         Message temp_msg_;
-        std::deque<Message> msgs_to_send_client_;
         Logger& logger_;
-        connection_strand strand_;
 };
 
 #endif

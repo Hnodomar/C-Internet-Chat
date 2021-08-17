@@ -4,10 +4,8 @@ ChatConnection::ChatConnection(
     tcp::socket socket, 
     chatrooms& chat_rooms, 
     Logger& logger,
-    connection_strand strand,
     std::mutex& chatroom_set_mutex
     ): 
-    strand_(std::move(strand)),
     socket_(std::move(socket)), 
     chatrooms_set_(chat_rooms), 
     chatroom_set_mutex_(chatroom_set_mutex),
