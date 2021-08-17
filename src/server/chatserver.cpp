@@ -37,7 +37,8 @@ void ChatServer::acceptConnections() {
                     logger_,
                     std::move(
                         boost::asio::make_strand(io_context)
-                    )
+                    ),
+                    chatroom_set_mutex_
                 )->init();
             }                
             acceptConnections();

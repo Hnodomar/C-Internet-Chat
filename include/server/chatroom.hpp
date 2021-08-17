@@ -23,10 +23,9 @@ class ChatRoom {
         void deliverMsgToUsers(const Message& msg);
         bool nickAvailable(char* nick_request);
         std::string getRoomName() {return room_name_;}
-        std::set<chat_user_ptr>& getUsers(){return users_;}
-        std::mutex& getChatroomMutex(){return chatroom_mutex_;}
-    private:
+        std::string getNicksList();
         std::mutex chatroom_mutex_;
+    private:
         const std::string room_name_;
         std::set<chat_user_ptr> users_;
         std::deque<Message> msg_queue_;

@@ -24,7 +24,8 @@ class ChatConnection : public SharedConnection, public ChatUser {
             tcp::socket socket, 
             chatrooms& chatrooms, 
             Logger& logger,
-            connection_strand strand
+            connection_strand strand,
+            std::mutex& chatroom_set_mutex
         );
         void init();
         void deliverMsgToConnection(const Message& msg) override;
@@ -47,12 +48,12 @@ class ChatConnection : public SharedConnection, public ChatUser {
             char type
         );
         bool chatroomNameExists(std::string& name);
-        std::string getChatroomNameList() const;
+        std::string getChatroomNameList();
         std::string getChatroomNicksList() const;
         chatrooms::iterator getChatroomItrFromName(std::string& name);
         chatrooms& chatrooms_set_;
         std::shared_ptr<ChatRoom> chatroom_;
-        std::mutex chatroom_list_mutex_;
+        std::mutex& chatroom_set_mutex_;
         tcp::socket socket_;
         Message temp_msg_;
         std::deque<Message> msgs_to_send_client_;

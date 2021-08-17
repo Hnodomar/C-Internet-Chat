@@ -4,11 +4,13 @@ ChatConnection::ChatConnection(
     tcp::socket socket, 
     chatrooms& chat_rooms, 
     Logger& logger,
-    connection_strand strand
+    connection_strand strand,
+    std::mutex& chatroom_set_mutex
     ): 
     strand_(std::move(strand)),
     socket_(std::move(socket)), 
     chatrooms_set_(chat_rooms), 
+    chatroom_set_mutex_(chatroom_set_mutex),
     logger_(logger)
 {}
 
@@ -86,8 +88,7 @@ void ChatConnection::sendMsgToClientNoQueue(
             if (!ec)
                 self->logger_.write(success_msg);
             else {
-                std::cout << ec.message() << std::endl;
-                self->logger_.write(fail_msg);
+                self->logger_.write(fail_msg + "\n[ ERROR: ] " + ec.message());
                 if (chatroom_ != nullptr)
                     chatroom_->leave(self);
             }
@@ -112,7 +113,7 @@ void ChatConnection::handleCreateRoomMsg() {
             'C'
         );
     else {
-        std::lock_guard<std::mutex> lock(chatroom_list_mutex_);
+        std::lock_guard<std::mutex> lock(chatroom_set_mutex_);
         sendMsgToClientNoQueue(
             "[ SERVER ]: Notified client that room can be created",
             "[ SERVER ]: Failed to notify client that room can be created",
@@ -167,10 +168,6 @@ void ChatConnection::handleNickMsg() {
         temp_msg_.getMessagePacketBodyLen()
     );
     if (chatroom_ == nullptr || chatroom_->nickAvailable(nick_request)) {
-        if (chatroom_ != nullptr)
-            chatroom_->deliverMsgToUsers(
-                NickChange(nick, nick_request)
-            );
         strncpy(nick, nick_request, 10);
         sendMsgToClientNoQueue(
             "[ SERVER ]: Notified client that name change successful",
@@ -178,6 +175,10 @@ void ChatConnection::handleNickMsg() {
             "Y",
             'N'
         );
+        if (chatroom_ != nullptr)
+            chatroom_->deliverMsgToUsers(
+                NickChange(nick, nick_request)
+            );
     }
     else {
         sendMsgToClientNoQueue(
@@ -230,8 +231,8 @@ void ChatConnection::handleJoinRoomMsg() {
     }
 }
 
-std::string ChatConnection::getChatroomNameList() const {
-    std::lock_guard<std::mutex> lock(chatroom_->getChatroomMutex());
+std::string ChatConnection::getChatroomNameList() {
+    std::lock_guard<std::mutex> lock(chatroom_set_mutex_);
     std::string list;
     for (const auto& chatroom : chatrooms_set_) {
         list += chatroom->getRoomName();
@@ -242,18 +243,12 @@ std::string ChatConnection::getChatroomNameList() const {
 }
 
 std::string ChatConnection::getChatroomNicksList() const {
-    std::lock_guard<std::mutex> lock(chatroom_->getChatroomMutex());
-    std::string list;
-    for (const auto& user_ptr : chatroom_->getUsers()) {
-        list += user_ptr->nick;
-        list += ' ';
-    }
-    list.pop_back();
-    return list;
+    auto self = shared_from_this();
+    return std::move(chatroom_->getNicksList());
 }
 
 chatrooms::iterator ChatConnection::getChatroomItrFromName(std::string& name) {
-    const std::lock_guard<std::mutex> lock(chatroom_list_mutex_);
+    const std::lock_guard<std::mutex> lock(chatroom_set_mutex_);
     return std::find_if(
         chatrooms_set_.begin(),
         chatrooms_set_.end(),
@@ -264,23 +259,17 @@ chatrooms::iterator ChatConnection::getChatroomItrFromName(std::string& name) {
 }
 
 bool ChatConnection::chatroomNameExists(std::string& name) {
-    const std::lock_guard<std::mutex> lock(chatroom_list_mutex_);
     return !(getChatroomItrFromName(name) == chatrooms_set_.end());
 }
 
 void ChatConnection::deliverMsgToConnection(const Message& msg) {
-    std::cout << "got here VVV\n";
     bool already_delivering = !msgs_to_send_client_.empty();
-    std::cout << "got here VVV\n";
     msgs_to_send_client_.push_back(msg);
-    std::cout << "got here VVV\n";
     if (!already_delivering) writeMsgToClient();
 }
 
 void ChatConnection::writeMsgToClient() {
-    std::cout << "got here VVV\n";
     auto self(shared_from_this());
-    std::cout << "got here VVV\n";
     boost::asio::async_write(
         socket_,
         boost::asio::buffer(
@@ -289,13 +278,17 @@ void ChatConnection::writeMsgToClient() {
         ),
         [self, this](boost::system::error_code ec, std::size_t) {
             if (!ec) {
+                bool sent_by_client = msgs_to_send_client_.front().sentByClient();
                 msgs_to_send_client_.pop_front();
                 if (!msgs_to_send_client_.empty())
                     writeMsgToClient();
+                else if (sent_by_client)
+                    readMsgHeader();
             }
-            else
+            else {
                 if (chatroom_ != nullptr) 
                     chatroom_->leave(self);
+            }
         }
     );
 }

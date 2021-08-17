@@ -8,7 +8,8 @@ struct JoinMessage : public Message {
         Message(
             std::string(username + std::string(" joined the room")), 
             (uint16_t)(username.length() + 16), 
-            'M'
+            'M',
+            false
         ) 
     {}
 };
@@ -18,7 +19,8 @@ struct LeaveMessage : public Message {
         Message(
             std::string(username + std::string(" left the room")),
             (uint16_t)(username.length() + 14),
-            'M'
+            'M',
+            false
         )
     {}
 };
@@ -28,7 +30,8 @@ struct NickChange : public Message {
         Message(
             std::string(old_nick + std::string(" changed nick to " + new_nick)),
             (uint16_t)(old_nick.length() + 17 + new_nick.length()),
-            'M'
+            'M',
+            false
         )
     {}
 };

@@ -8,6 +8,11 @@ Message::Message(const std::string& msg_body, uint16_t body_len, char type):
     memcpy(getMessagePacketBody(), msg_body.c_str(), body_len);      
 }
 
+Message::Message(const std::string& msg_body, uint16_t body_len, char type, bool sent_by_client) 
+    : Message(msg_body, body_len, type) {
+    sent_by_client_ = sent_by_client;
+}
+
 uint8_t* Message::getMessagePacket() {
     return packet_;
 }

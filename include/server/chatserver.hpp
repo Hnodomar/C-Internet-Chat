@@ -25,6 +25,7 @@ class ChatServer {
         tcp::acceptor acceptor_;
         boost::thread_group thrds_async;
         std::unique_ptr<boost::asio::io_context::work> work;
+        std::mutex chatroom_set_mutex_;
         std::set<std::shared_ptr<ChatRoom>> chatrooms_;
         Logger logger_;
 };

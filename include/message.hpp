@@ -13,6 +13,7 @@ class Message {
     public:
         Message();
         Message(const std::string& msg_body, uint16_t body_len, char type);
+        Message(const std::string& msg_body, uint16_t body_len, char type, bool sent_by_client);
         uint8_t* getMessagePacket();
         uint8_t* getMessagePacketBody();
         uint16_t getMessagePacketBodyLen() const;
@@ -21,10 +22,12 @@ class Message {
         bool parseHeader();
         void addHeader(char tag);
         char type() {return msg_type_;}
+        bool sentByClient() {return sent_by_client_;}
     private:
         uint8_t packet_[header_len + max_body_len];
         char msg_type_;
         uint16_t body_len_;
+        bool sent_by_client_ = true;
 };
 
 #endif
