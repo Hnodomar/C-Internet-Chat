@@ -83,10 +83,19 @@ void ChatConnection::sendMsgToClientNoQueue(
         body,
         type,
         [this, success_msg, fail_msg, self=shared_from_this()](boost::system::error_code ec, std::size_t) {
-            if (!ec)
-                self->logger_.write(success_msg);
+            if (!ec) {
+                #ifdef THREADLOGGING
+                    self->logger_.write(getThreadIDString() + success_msg);
+                #else
+                    self->logger_.write(success_msg);
+                #endif
+            }
             else {
-                self->logger_.write(fail_msg + "\n[ ERROR: ] " + ec.message());
+                #ifdef THREADLOGGING
+                    self->logger_.write(getThreadIDString() + fail_msg + "\n[ ERROR: ] " + ec.message());
+                #else
+                    self->logger_.write(fail_msg + "\n[ ERROR: ] " + ec.message());
+                #endif
                 if (chatroom_ != nullptr)
                     chatroom_->leave(self);
             }
@@ -146,6 +155,9 @@ void ChatConnection::handleListRoomsMsg() {
 
 void ChatConnection::handleChatMsg() {
     logger_.write(
+        #ifdef THREADLOGGING
+            getThreadIDString() + 
+        #endif
         "[  USER  ] [" + chatroom_->getRoomName() + "]: " + 
         std::string(
             reinterpret_cast<char*>(

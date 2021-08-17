@@ -7,6 +7,12 @@
 #include <boost/asio.hpp>
 #include "message.hpp"
 
+#ifdef THREADLOGGING
+    #include <boost/thread/thread.hpp>
+    #include <boost/lexical_cast.hpp>
+    std::string getThreadIDString();
+#endif
+
 std::string getTimeString();
 std::string getDateTimeString();
 void sendMsgToSocketNoQueue(

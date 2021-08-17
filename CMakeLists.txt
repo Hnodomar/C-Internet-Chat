@@ -13,6 +13,10 @@ file(GLOB server_includes "include/server" "include")
 add_executable(server ${server_sources})
 target_include_directories(server PUBLIC ${server_includes})
 target_link_libraries(server ${Boost_LIBRARIES})
+option(THREADLOGGING "Add thread IDs to logging" OFF) #disabled by default
+if(THREADLOGGING)
+    target_compile_definitions(server PUBLIC -DTHREADLOGGING)
+endif(THREADLOGGING)
 
 file(GLOB client_sources "src/client/*.cpp" "src/message.cpp" "src/util.cpp")
 file(GLOB client_includes "include/client" "include")

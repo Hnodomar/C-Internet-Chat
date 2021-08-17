@@ -48,3 +48,14 @@ void sendMsgToSocketNoQueue(
         handler  
     );
 }
+
+#ifdef THREADLOGGING
+    std::string getThreadIDString() {
+        std::string thread_id = boost::lexical_cast<std::string>(
+            boost::this_thread::get_id()
+        );
+        unsigned long thread_num = 0;
+        sscanf(thread_id.c_str(), "%lx", &thread_num);
+        return "[THREADID: " + std::to_string(thread_num) + "] ";
+    }
+#endif

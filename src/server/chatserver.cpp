@@ -9,7 +9,6 @@ ChatServer::ChatServer(char* port, bool output_to_file)
                 "Lobby"
             )
         );
-
         logger_.write("[ SERVER ]: Successfully setup server");
         work = std::make_unique<boost::asio::io_context::work>(io_context);
         for (int i = 0; i < boost::thread::hardware_concurrency() - 1; ++i)
