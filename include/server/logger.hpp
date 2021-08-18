@@ -11,7 +11,7 @@ typedef boost::asio::strand<boost::asio::io_context::executor_type> logger_stran
 class Logger {
     public:
         Logger(bool output_to_file, logger_strand strand): 
-            outputstream(nullptr), strand_(std::move(strand)) {
+            outputstream(nullptr), timefn_ptr(nullptr), strand_(std::move(strand)) {
             if (output_to_file) file.open("serverlog.txt", std::ios_base::app);
             outputstream = &(output_to_file ? file : std::cout);
             timefn_ptr = &(output_to_file ? getDateTimeString : getTimeString);
@@ -32,7 +32,7 @@ class Logger {
         }
         std::fstream file;
         std::ostream* outputstream;
-        std::string (*timefn_ptr)() = nullptr;
+        std::string (*timefn_ptr)();
         logger_strand strand_;
 };
 

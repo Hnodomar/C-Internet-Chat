@@ -4,12 +4,14 @@ ChatConnection::ChatConnection(
     tcp::socket socket, 
     chatrooms& chat_rooms, 
     Logger& logger,
-    std::mutex& chatroom_set_mutex
+    std::mutex& chatroom_set_mutex,
+    std::string client_address
     ): 
     socket_(std::move(socket)), 
     chatrooms_set_(chat_rooms), 
     chatroom_set_mutex_(chatroom_set_mutex),
-    logger_(logger)
+    logger_(logger),
+    client_address_(std::move(client_address))
 {}
 
 void ChatConnection::init() {
@@ -276,7 +278,7 @@ bool ChatConnection::chatroomNameExists(std::string& name) {
 void ChatConnection::writeMsgToClient(const Message& msg) {
     auto self(shared_from_this());
     Message temp = msg;
-    boost::asio::async_write(
+    boost::asio::async_write( //thread-safe: https://stackoverflow.com/questions/7362894/boostasiosocket-thread-safety
         socket_,
         boost::asio::buffer(
             temp.getMessagePacket(),

@@ -39,7 +39,7 @@ void sendMsgToSocketNoQueue(
         body.length(),
         tag
     );
-    boost::asio::async_write(
+    boost::asio::async_write( //thread-safe: https://stackoverflow.com/questions/7362894/boostasiosocket-thread-safety
         socket,
         boost::asio::buffer(
             msg.getMessagePacket(),

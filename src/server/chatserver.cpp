@@ -27,13 +27,19 @@ void ChatServer::acceptConnections() {
     acceptor_.async_accept(
         [this](boost::system::error_code ec, tcp::socket socket) {
             if (!ec) {
-                logger_.write("[ SERVER ]: Client connected from "
-                    + socket.remote_endpoint().address().to_string());
+                logger_.write(
+                    #ifdef THREADLOGGING
+                        getThreadIDString() + 
+                    #endif
+                    "[ SERVER ]: Client connected from "
+                    + socket.remote_endpoint().address().to_string()
+                );
                 std::make_shared<ChatConnection>(
                     std::move(socket), 
                     chatrooms_, 
                     logger_,
-                    chatroom_set_mutex_
+                    chatroom_set_mutex_,
+                    std::move(socket.remote_endpoint().address().to_string())
                 )->init();
             }                
             acceptConnections();
