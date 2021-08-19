@@ -30,6 +30,12 @@ class ChatClient {
         void addMsgToQueue(const Message& msg);
         void writeMsgToServer();
         void closeSocket();
+        void sendMsgToServerNoQueue(
+            const std::string& body,
+            char type,
+            const std::string& success_msg,
+            const std::string& fail_msg
+        );
         void askServerToJoinRoom(std::string& roomname);
         void askServerForRoomList();
         void askServerForUserList();

@@ -84,20 +84,15 @@ void ChatConnection::sendMsgToClientNoQueue(
     sendMsgToSocketNoQueue(
         body,
         type,
-        [this, success_msg, fail_msg, self=shared_from_this()](boost::system::error_code ec, std::size_t) {
+        [this, 
+        s=std::move(success_msg), 
+        f=std::move(fail_msg), 
+        self=shared_from_this()](boost::system::error_code ec, std::size_t) {
             if (!ec) {
-                #ifdef THREADLOGGING
-                    self->logger_.write(getThreadIDString() + success_msg);
-                #else
-                    self->logger_.write(success_msg);
-                #endif
+                self->logger_.write(s);
             }
             else {
-                #ifdef THREADLOGGING
-                    self->logger_.write(getThreadIDString() + fail_msg + "\n[ ERROR: ] " + ec.message());
-                #else
-                    self->logger_.write(fail_msg + "\n[ ERROR: ] " + ec.message());
-                #endif
+                self->logger_.write(f + "\n[ ERROR: ] " + ec.message());
                 if (chatroom_ != nullptr)
                     chatroom_->leave(self);
             }
@@ -157,9 +152,6 @@ void ChatConnection::handleListRoomsMsg() {
 
 void ChatConnection::handleChatMsg() {
     logger_.write(
-        #ifdef THREADLOGGING
-            getThreadIDString() + 
-        #endif
         "[  USER  ] [" + chatroom_->getRoomName() + "]: " + 
         std::string(
             reinterpret_cast<char*>(
@@ -212,7 +204,8 @@ void ChatConnection::handleJoinRoomMsg() {
         temp_msg_.getMessagePacketBodyLen()   
     );
     auto chatroom_itr = getChatroomItrFromName(room_name);
-    if (chatroom_itr != chatrooms_set_.end()) {
+    auto chatroomExists = [&]{return chatroom_itr != chatrooms_set_.end();};
+    if (chatroomExists()) {
         if ((*chatroom_itr)->nickAvailable(nick)) {
             if (chatroom_ != nullptr)
                 chatroom_->leave(self);

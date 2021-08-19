@@ -82,24 +82,38 @@ void ChatClient::interpretCommand(const char* input) {
     else std::cout << "[ CLIENT ] Invalid Command - still checking username" << std::endl;
 }
 
+void ChatClient::sendMsgToServerNoQueue(
+    const std::string& body,
+    char type,
+    const std::string& success_msg,
+    const std::string& fail_msg) {
+    sendMsgToSocketNoQueue(
+        body,
+        type,
+        [this,
+        s=std::move(success_msg),
+        f=std::move(fail_msg)](boost::system::error_code ec, std::size_t) {
+            if (!ec)
+                std::cout << s << std::endl;
+            else {
+                std::cout << f << std::endl;
+                socket_.close();
+            }
+        },
+        socket_
+    );
+}
+
 void ChatClient::askServerToCreateRoom(std::string& roomname) {
     if (roomname.empty()) {
         std::cout << "[ CLIENT ] Invalid roomname" << std::endl;
         return;
     }
-    sendMsgToSocketNoQueue(
+    sendMsgToServerNoQueue(
         roomname,
         'C',
-        [this](boost::system::error_code ec, std::size_t) {
-            if (!ec)
-                std::cout << "[ CLIENT ] Requesting room creation by server" << std::endl; 
-            else {
-                std::cout << "[ CLIENT ] Failed to request room creation" << std::endl;
-                socket_.close();
-            } 
-                
-        },
-        socket_
+        "[ CLIENT ] Requesting room creation by server",
+        "[ CLIENT ] Failed to request room creation"
     );
 }
 
@@ -108,34 +122,20 @@ void ChatClient::askServerForUserList() {
         std::cout << "[ CLIENT ] cannot fetch users list when not in a chatroom" << std::endl;
         return;
     }
-    sendMsgToSocketNoQueue(
+    sendMsgToServerNoQueue(
         "",
         'U',
-        [this](boost::system::error_code ec, std::size_t) {
-            if (!ec)
-                std::cout << "[ CLIENT ] Requesting user list from server" << std::endl; 
-            else {
-                std::cout << "[ CLIENT ] Failed to user list" << std::endl;
-                socket_.close();
-            } 
-        },
-        socket_
+        "[ CLIENT ] Requesting user list from server",
+        "[ CLIENT ] Failed to user list"
     );
 }
 
 void ChatClient::askServerForRoomList() {
-    sendMsgToSocketNoQueue(
+    sendMsgToServerNoQueue(
         "",
         'L',
-        [this](boost::system::error_code ec, std::size_t) {
-            if (!ec)
-                std::cout << "[ CLIENT ] Requesting room list from server" << std::endl; 
-            else {
-                std::cout << "[ CLIENT ] Failed to request room list" << std::endl;
-                socket_.close();
-            } 
-        },
-        socket_
+        "[ CLIENT ] Requesting room list from server",
+        "[ CLIENT ] Failed to request room list"
     );
 }
 

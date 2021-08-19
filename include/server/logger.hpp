@@ -16,6 +16,7 @@ class Logger {
             outputstream = &(output_to_file ? file : std::cout);
             timefn_ptr = &(output_to_file ? getDateTimeString : getTimeString);
         }
+        #ifndef THREADLOGGING
         void write(const std::string& output) {
             boost::asio::post(
                 boost::asio::bind_executor(
@@ -26,6 +27,18 @@ class Logger {
                 )
             );
         }
+        #else
+        void write(const std::string& output) {
+            boost::asio::post(
+                boost::asio::bind_executor(
+                    strand_,
+                    boost::bind(
+                        &Logger::output, this, std::move(getThreadIDString() + output)
+                    )
+                )
+            );
+        }
+        #endif
     private:
         void output(std::string output) { //all output is sequential
             (*outputstream) << (*timefn_ptr)() << output << std::endl;

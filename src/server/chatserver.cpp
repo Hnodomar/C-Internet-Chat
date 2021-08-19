@@ -4,11 +4,7 @@ ChatServer::ChatServer(char* port, bool output_to_file)
     : acceptor_(io_context, tcp::endpoint(tcp::v4(), std::atoi(port))), 
       logger_(output_to_file, std::move(boost::asio::make_strand(io_context)))
     {
-        chatrooms_.emplace(
-            std::make_shared<ChatRoom>(
-                "Lobby"
-            )
-        );
+        chatrooms_.emplace(std::make_shared<ChatRoom>("Lobby"));
         logger_.write("[ SERVER ]: Successfully setup server");
         work = std::make_unique<boost::asio::io_context::work>(io_context);
         for (int i = 0; i < boost::thread::hardware_concurrency() - 1; ++i)
